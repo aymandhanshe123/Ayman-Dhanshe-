@@ -1,5 +1,5 @@
 {% comment %}
-Custom Product Grid with Popup + AJAX Cart Drawer + Toast
+Custom Product Grid Section with Popup
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
@@ -11,14 +11,14 @@ Custom Product Grid with Popup + AJAX Cart Drawer + Toast
 
   <div class="product-grid">
     {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card"
-           data-id="{{ product.variants.first.id }}"
+      <div class="product-card" 
            data-title="{{ product.title }}"
            data-price="{{ product.price | money }}"
            data-url="{{ product.url }}"
-           data-image="{{ product.featured_image | image_url: width: 600 }}"
-           data-description="{{ product.description | strip_html | truncate: 180 }}">
-        <img src="{{ product.featured_image | image_url: width: 600 }}" alt="{{ product.title }}">
+           data-image="{{ product.featured_image | image_url: width: 400 }}"
+           data-description="{{ product.description | strip_html | truncate: 150 }}">
+        <img src="{{ product.featured_image | image_url: width: 400 }}" 
+             alt="{{ product.title }}">
         <h3>{{ product.title }}</h3>
         <p>{{ product.price | money }}</p>
       </div>
@@ -36,21 +36,25 @@ Custom Product Grid with Popup + AJAX Cart Drawer + Toast
         <h3 id="modalTitle"></h3>
         <p id="modalPrice"></p>
         <p id="modalDescription"></p>
-
-        <label for="modalQuantity">Quantity</label>
-        <input id="modalQuantity" type="number" value="1" min="1" style="width:80px; margin-bottom:12px;">
-
+        
+        <label>Color</label>
+        <div class="color-options">
+          <button class="color-btn">Blue</button>
+          <button class="color-btn">Black</button>
+        </div>
+        
+        <label for="modalSize">Size</label>
+        <select id="modalSize">
+          <option>Choose your size</option>
+          <option>XS</option>
+          <option>S</option>
+          <option>M</option>
+          <option>L</option>
+          <option>XL</option>
+        </select>
+        
         <button class="add-to-cart">Add to Cart →</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="toast">
-    <span>✅ Added to cart</span>
-    <div class="toast-actions">
-      <a href="/cart" class="toast-btn">View Cart</a>
-      <button id="toastDismiss" class="toast-btn secondary">Continue Shopping</button>
     </div>
   </div>
 </section>
@@ -59,25 +63,30 @@ Custom Product Grid with Popup + AJAX Cart Drawer + Toast
 .product-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+  gap: 20px;
 }
 .product-card {
   border:1px solid #ddd;
-  border-radius:14px;
-  padding:15px;
+  border-radius:12px;
+  padding:10px;
   text-align:center;
   cursor:pointer;
-  transition: all 0.3s;
-  background:#fff;
+  transition: 0.3s;
 }
-.product-card:hover { transform: translateY(-4px); box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-.product-card img { width:100%; border-radius:10px; margin-bottom:12px; }
+.product-card:hover {
+  transform: scale(1.03);
+}
+.product-card img {
+  width:100%;
+  border-radius:8px;
+}
 
-@media(max-width:768px) {
+/* Responsive */
+@media(max-width:1024px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media(max-width:480px) {
-  .product-grid { grid-template-columns: repeat(1, 1fr); }
+@media(max-width:600px) {
+  .product-grid { grid-template-columns: 1fr; }
 }
 
 /* Popup Modal */
@@ -85,157 +94,73 @@ Custom Product Grid with Popup + AJAX Cart Drawer + Toast
   display: none;
   position: fixed;
   z-index: 9999;
-  inset: 0;
-  background: rgba(0,0,0,0.65);
+  left:0; top:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.6);
   justify-content: center;
   align-items: center;
 }
 .modal-content {
   background:#fff;
-  padding:25px;
-  border-radius:14px;
-  max-width:420px;
+  padding:20px;
+  border-radius:12px;
+  max-width:400px;
   width:90%;
   position:relative;
-  animation: fadeInUp 0.3s ease;
 }
-@keyframes fadeInUp { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
-.modal-content img { width:100%; border-radius:10px; margin-bottom:15px; }
+.modal-content img {
+  width:100%;
+  border-radius:8px;
+  margin-bottom:15px;
+}
 .close {
   position:absolute;
-  top:12px; right:16px;
-  font-size:24px;
+  top:10px; right:15px;
+  font-size:22px;
+  cursor:pointer;
+}
+.color-options {
+  display:flex; gap:10px; margin:10px 0;
+}
+.color-btn {
+  flex:1;
+  border:1px solid #000;
+  background:#fff;
+  padding:8px;
   cursor:pointer;
 }
 .add-to-cart {
   display:block;
   width:100%;
   margin-top:15px;
-  padding:14px;
+  padding:12px;
   background:#000;
   color:#fff;
   border:none;
   border-radius:8px;
   cursor:pointer;
-  font-size:16px;
-  transition: 0.3s;
 }
-.add-to-cart:hover { background:#333; }
-
-/* Toast */
-.toast {
-  visibility: hidden;
-  min-width: 260px;
-  background-color: #323232;
-  color: #fff;
-  border-radius: 8px;
-  padding: 14px;
-  position: fixed;
-  z-index: 99999;
-  left: 50%;
-  bottom: 30px;
-  transform: translateX(-50%);
-  font-size: 15px;
-  opacity: 0;
-  transition: opacity 0.4s, bottom 0.4s;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-}
-.toast.show {
-  visibility: visible;
-  opacity: 1;
-  bottom: 50px;
-}
-.toast-actions { display:flex; gap:10px; }
-.toast-btn {
-  background: #fff;
-  color: #000;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  text-decoration: none;
-  transition: 0.3s;
-  border:none;
-  cursor:pointer;
-}
-.toast-btn:hover { background: #eee; }
-.toast-btn.secondary { background:transparent; color:#fff; border:1px solid #fff; }
-.toast-btn.secondary:hover { background:#444; }
 </style>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  let currentProductId = null;
-  const modal = document.getElementById("productModal");
-  const toast = document.getElementById("toast");
-
-  // Open modal when clicking a product card
-  document.querySelectorAll(".product-card").forEach(card => {
-    card.addEventListener("click", () => {
-      currentProductId = card.dataset.id;
-      document.getElementById("modalImage").src = card.dataset.image;
-      document.getElementById("modalTitle").textContent = card.dataset.title;
-      document.getElementById("modalPrice").textContent = card.dataset.price;
-      document.getElementById("modalDescription").textContent = card.dataset.description;
-      modal.style.display = "flex";
-    });
+document.querySelectorAll(".product-card").forEach(card => {
+  card.addEventListener("click", () => {
+    document.getElementById("modalImage").src = card.dataset.image;
+    document.getElementById("modalTitle").textContent = card.dataset.title;
+    document.getElementById("modalPrice").textContent = card.dataset.price;
+    document.getElementById("modalDescription").textContent = card.dataset.description;
+    document.getElementById("productModal").style.display = "flex";
   });
+});
 
-  // Close modal
-  document.querySelector(".close").addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-  window.addEventListener("click", (e) => {
-    if (e.target.id === "productModal") modal.style.display = "none";
-  });
+document.querySelector(".close").addEventListener("click", () => {
+  document.getElementById("productModal").style.display = "none";
+});
 
-  // AJAX Add to Cart with Drawer Refresh + Toast
-  document.querySelector(".add-to-cart").addEventListener("click", () => {
-    if (!currentProductId) return;
-
-    const qty = parseInt(document.getElementById("modalQuantity").value) || 1;
-
-    fetch('/cart/add.js', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: currentProductId, quantity: qty })
-    })
-    .then(res => res.json())
-    .then(() => {
-      modal.style.display = "none";
-
-      // Refresh Shopify cart drawer if present
-      const cartDrawer = document.querySelector('cart-drawer');
-      if (cartDrawer) {
-        fetch('/?sections=cart-drawer')
-          .then(res => res.json())
-          .then(data => {
-            const parser = new DOMParser();
-            const html = parser.parseFromString(data['cart-drawer'], 'text/html');
-            cartDrawer.innerHTML = html.querySelector('cart-drawer').innerHTML;
-            cartDrawer.setAttribute("open", "true");
-          });
-      } 
-
-      // Show toast
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-      }, 5000);
-
-    })
-    .catch(err => {
-      console.error("Error adding to cart:", err);
-      alert("Something went wrong. Try again.");
-    });
-  });
-
-  // Toast dismiss
-  document.getElementById("toastDismiss").addEventListener("click", () => {
-    toast.classList.remove("show");
-  });
+window.addEventListener("click", (e) => {
+  if (e.target.id === "productModal") {
+    document.getElementById("productModal").style.display = "none";
+  }
 });
 </script>
 
@@ -243,10 +168,32 @@ document.addEventListener("DOMContentLoaded", () => {
 {
   "name": "Custom Product Grid",
   "settings": [
-    { "type": "text", "id": "heading", "label": "Section Heading", "default": "Featured Products" },
-    { "type": "collection", "id": "collection", "label": "Select Collection" },
-    { "type": "range", "id": "products_to_show", "label": "Number of products", "min": 2, "max": 12, "step": 1, "default": 6 }
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section Heading",
+      "default": "Featured Products"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Number of products",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 6
+    }
   ],
-  "presets": [{ "name": "Custom Product Grid with Popup", "category": "Custom" }]
+  "presets": [
+    {
+      "name": "Custom Product Grid with Popup",
+      "category": "Custom"
+    }
+  ]
 }
 {% endschema %}
