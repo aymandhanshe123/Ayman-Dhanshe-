@@ -1,84 +1,100 @@
-{% comment %}
-  Banner Section
-{% endcomment %}
-
-<section class="relative w-full h-[600px]">
-  <!-- Background Image -->
-  {% if section.settings.image != blank %}
-    <img 
-      src="{{ section.settings.image | img_url: 'master' }}" 
-      alt="{{ section.settings.heading }}" 
-      class="absolute inset-0 w-full h-full object-cover object-center"
-    >
-  {% endif %}
-
-  <!-- Overlay -->
-  <div class="absolute inset-0 bg-black/40"></div>
-
-  <!-- Content -->
-  <div class="relative z-10 flex flex-col items-center justify-center text-center h-full px-4 text-white">
-    {% if section.settings.heading != blank %}
-      <h1 class="text-4xl md:text-6xl font-bold mb-4">
-        {{ section.settings.heading }}
-      </h1>
-    {% endif %}
-
-    {% if section.settings.subheading != blank %}
-      <p class="text-lg md:text-2xl mb-6">
-        {{ section.settings.subheading }}
-      </p>
-    {% endif %}
-
-    {% if section.settings.button_label != blank and section.settings.button_link != blank %}
-      <a 
-        href="{{ section.settings.button_link }}" 
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition"
-      >
-        {{ section.settings.button_label }}
-      </a>
-    {% endif %}
-  </div>
-</section>
-
 {% schema %}
 {
   "name": "Custom Banner",
   "settings": [
     {
-      "type": "image_picker",
-      "id": "image",
-      "label": "Banner Image"
+      "type": "text",
+      "id": "title",
+      "label": "Banner Title",
+      "default": "Shop the Winter Collection"
     },
     {
       "type": "text",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Welcome to Our Store"
+      "id": "subtitle",
+      "label": "Banner Subtitle",
+      "default": "Stay warm in style"
     },
     {
       "type": "text",
-      "id": "subheading",
-      "label": "Subheading",
-      "default": "Your subheading goes here"
-    },
-    {
-      "type": "text",
-      "id": "button_label",
-      "label": "Button Label",
+      "id": "button_text",
+      "label": "Button Text",
       "default": "Shop Now"
     },
     {
       "type": "url",
       "id": "button_link",
-      "label": "Button Link",
-      "default": "/collections/all"
+      "label": "Button Link"
+    },
+    {
+      "type": "image_picker",
+      "id": "banner_image",
+      "label": "Banner Background Image"
     }
   ],
   "presets": [
     {
-      "name": "Custom Banner",
-      "category": "Custom"
+      "name": "Custom Banner"
     }
   ]
 }
 {% endschema %}
+
+<section class="custom-banner" style="background-image: url({{ section.settings.banner_image | image_url: 'master' }});">
+  <div class="banner-overlay">
+    <h1>{{ section.settings.title }}</h1>
+    <p>{{ section.settings.subtitle }}</p>
+    {% if section.settings.button_text != blank %}
+      <a href="{{ section.settings.button_link }}" class="banner-btn">
+        {{ section.settings.button_text }}
+      </a>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.custom-banner {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  text-align: center;
+  padding: 100px 20px;
+  color: white;
+}
+
+.banner-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  display: inline-block;
+  padding: 20px 40px;
+  border-radius: 8px;
+}
+
+.banner-btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: #fff;
+  color: #000;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+}
+
+.banner-btn:hover {
+  background: #000;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .custom-banner {
+    padding: 60px 15px;
+  }
+  .banner-overlay {
+    padding: 15px 25px;
+  }
+  .banner-btn {
+    padding: 10px 20px;
+  }
+}
+</style>
