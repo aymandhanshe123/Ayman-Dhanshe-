@@ -1,218 +1,116 @@
-{% comment %}
-Custom Product Grid Section with Popup + Dynamic Variants
-{% endcomment %}
-
-<section class="custom-product-grid" style="padding:60px 20px;">
-  {% if section.settings.heading != blank %}
-    <h2 style="text-align:center; margin-bottom:30px;">
-      {{ section.settings.heading }}
-    </h2>
-  {% endif %}
-
-  <div class="product-grid">
-    {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card" 
-           data-product='{{ product | json | escape }}'>
-        <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
-        <h3>{{ product.title }}</h3>
-        <p>{{ product.price | money }}</p>
-      </div>
-    {% else %}
-      <p>No products found in this collection.</p>
-    {% endfor %}
+<!-- Product Grid Section -->
+<div class="product-grid">
+  <!-- Example product card (you’ll render 6 like this from the customizer) -->
+  <div class="product-card" 
+       data-handle="white-cotton-shirt"> <!-- 👈 product handle -->
+    <img src="{{ product.featured_image | img_url: '400x' }}" alt="White Cotton Shirt">
+    <h3>{{ product.title }}</h3>
+    <button class="quick-view-btn">Quick View</button>
   </div>
+</div>
 
-  <!-- Popup Modal -->
-  <div id="productModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <div class="modal-body">
-        <img id="modalImage" src="" alt="" />
-        <h3 id="modalTitle"></h3>
-        <p id="modalPrice"></p>
-        <p id="modalDescription"></p>
+<!-- Popup -->
+<div id="product-popup" class="popup hidden">
+  <div class="popup-content">
+    <button id="close-popup">✖</button>
+    <h2 id="popup-title"></h2>
+    <p id="popup-price"></p>
+    <p id="popup-desc"></p>
 
-        <!-- Variant Selector -->
-        <div id="variantSelectors"></div>
+    <select id="variant-select"></select>
 
-        <button class="add-to-cart" id="addToCartBtn">Add to Cart →</button>
-      </div>
-    </div>
+    <button id="add-to-cart">Add to Cart</button>
   </div>
-</section>
+</div>
 
 <style>
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-.product-card {
-  border:1px solid #ddd;
-  border-radius:12px;
-  padding:10px;
-  text-align:center;
-  cursor:pointer;
-  transition: 0.3s;
-}
-.product-card:hover {
-  transform: scale(1.03);
-}
-.product-card img {
-  width:100%;
-  border-radius:8px;
-}
-
-/* Responsive */
-@media(max-width:1024px) {
-  .product-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media(max-width:600px) {
-  .product-grid { grid-template-columns: 1fr; }
-}
-
-/* Popup Modal */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  left:0; top:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.6);
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  background:#fff;
-  padding:20px;
-  border-radius:12px;
-  max-width:400px;
-  width:90%;
-  position:relative;
-}
-.modal-content img {
-  width:100%;
-  border-radius:8px;
-  margin-bottom:15px;
-}
-.close {
-  position:absolute;
-  top:10px; right:15px;
-  font-size:22px;
-  cursor:pointer;
-}
-.add-to-cart {
-  display:block;
-  width:100%;
-  margin-top:15px;
-  padding:12px;
-  background:#000;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
+.hidden { display: none; }
+.popup { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; }
+.popup-content { background: #fff; padding: 20px; border-radius: 10px; width: 400px; }
 </style>
 
 <script>
-let currentProduct = null;
-let selectedVariantId = null;
+// Grab elements
+const popup = document.getElementById("product-popup");
+const popupTitle = document.getElementById("popup-title");
+const popupPrice = document.getElementById("popup-price");
+const popupDesc = document.getElementById("popup-desc");
+const variantSelect = document.getElementById("variant-select");
+const addToCartBtn = document.getElementById("add-to-cart");
 
-document.querySelectorAll(".product-card").forEach(card => {
-  card.addEventListener("click", () => {
-    const product = JSON.parse(card.dataset.product);
-    currentProduct = product;
+// Open popup when "Quick View" clicked
+document.querySelectorAll(".quick-view-btn").forEach(btn => {
+  btn.addEventListener("click", async (e) => {
+    const card = e.target.closest(".product-card");
+    const handle = card.dataset.handle;
 
-    // Fill modal
-    document.getElementById("modalImage").src = product.featured_image.src;
-    document.getElementById("modalTitle").textContent = product.title;
-    document.getElementById("modalPrice").textContent = Shopify.formatMoney(product.price);
-    document.getElementById("modalDescription").textContent = product.body_html.replace(/<[^>]+>/g, '').slice(0, 150);
+    // Fetch product JSON from Shopify
+    const res = await fetch(`/products/${handle}.json`);
+    const data = await res.json();
 
-    // Build variant selectors
-    const variantSelectors = document.getElementById("variantSelectors");
-    variantSelectors.innerHTML = "";
+    const product = data.product;
 
-    if (product.variants.length > 1) {
-      const select = document.createElement("select");
-      select.id = "variantSelect";
-      product.variants.forEach(variant => {
-        const option = document.createElement("option");
-        option.value = variant.id;
-        option.textContent = variant.title + " - " + Shopify.formatMoney(variant.price);
-        select.appendChild(option);
-      });
-      variantSelectors.appendChild(select);
-      selectedVariantId = product.variants[0].id;
-      select.addEventListener("change", (e) => {
-        selectedVariantId = e.target.value;
-      });
-    } else {
-      selectedVariantId = product.variants[0].id;
-    }
+    // Fill popup
+    popupTitle.textContent = product.title;
+    popupPrice.textContent = "₹" + product.variants[0].price / 100;
+    popupDesc.textContent = product.body_html.replace(/<[^>]+>/g, ""); // strip HTML
 
-    document.getElementById("productModal").style.display = "flex";
+    // Fill variants
+    variantSelect.innerHTML = "";
+    product.variants.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.id;  // 👈 variant ID
+      opt.textContent = v.title + " - ₹" + v.price / 100;
+      variantSelect.appendChild(opt);
+    });
+
+    // Store product in button dataset
+    addToCartBtn.dataset.productTitle = product.title;
+
+    popup.classList.remove("hidden");
   });
 });
 
-document.querySelector(".close").addEventListener("click", () => {
-  document.getElementById("productModal").style.display = "none";
+// Close popup
+document.getElementById("close-popup").addEventListener("click", () => {
+  popup.classList.add("hidden");
 });
 
-window.addEventListener("click", (e) => {
-  if (e.target.id === "productModal") {
-    document.getElementById("productModal").style.display = "none";
-  }
-});
+// Add to Cart
+addToCartBtn.addEventListener("click", async () => {
+  const variantId = variantSelect.value;
 
-// Add to cart
-document.getElementById("addToCartBtn").addEventListener("click", () => {
-  if (!selectedVariantId) return alert("Please select a variant.");
-
-  fetch("/cart/add.js", {
+  // Normal add
+  await fetch("/cart/add.js", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: selectedVariantId, quantity: 1 })
-  })
-  .then(res => res.json())
-  .then(data => {
-    alert("Added to cart: " + data.title);
-    document.getElementById("productModal").style.display = "none";
-  })
-  .catch(err => console.error(err));
+    body: JSON.stringify({ id: variantId, quantity: 1 })
+  });
+
+  // Special rule: if "Black / Medium" is chosen → also add "Soft Winter Jacket"
+  const selectedText = variantSelect.options[variantSelect.selectedIndex].text.toLowerCase();
+  if (selectedText.includes("black") && selectedText.includes("medium")) {
+    await fetch("/cart/add.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: YOUR_SOFT_JACKET_VARIANT_ID, quantity: 1 })
+    });
+  }
+
+  // Toast
+  const toast = document.createElement("div");
+  toast.innerHTML = `✅ Added to cart! <a href="/cart" style="color:blue; text-decoration:underline;">View Cart</a>`;
+  toast.style.position = "fixed";
+  toast.style.bottom = "20px";
+  toast.style.right = "20px";
+  toast.style.background = "#333";
+  toast.style.color = "#fff";
+  toast.style.padding = "12px 16px";
+  toast.style.borderRadius = "6px";
+  toast.style.zIndex = "9999";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+
+  popup.classList.add("hidden");
 });
 </script>
-
-{% schema %}
-{
-  "name": "Custom Product Grid",
-  "settings": [
-    {
-      "type": "text",
-      "id": "heading",
-      "label": "Section Heading",
-      "default": "Featured Products"
-    },
-    {
-      "type": "collection",
-      "id": "collection",
-      "label": "Select Collection"
-    },
-    {
-      "type": "range",
-      "id": "products_to_show",
-      "label": "Number of products",
-      "min": 2,
-      "max": 12,
-      "step": 1,
-      "default": 6
-    }
-  ],
-  "presets": [
-    {
-      "name": "Custom Product Grid with Popup",
-      "category": "Custom"
-    }
-  ]
-}
-{% endschema %}
