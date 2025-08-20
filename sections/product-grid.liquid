@@ -1,5 +1,5 @@
 {% comment %}
-Custom Product Grid Section with Popup + AJAX Cart Drawer + Toast
+Custom Product Grid Section with Popup + AJAX Cart Drawer + Toast + View Cart Button
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
@@ -53,7 +53,10 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer + Toast
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast" class="toast">Added to cart ✔</div>
+  <div id="toast" class="toast">
+    <span>Added to cart ✔</span>
+    <a href="/cart" class="toast-btn">View Cart</a>
+  </div>
 </section>
 
 <style>
@@ -122,7 +125,7 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer + Toast
 /* Toast */
 .toast {
   visibility: hidden;
-  min-width: 200px;
+  min-width: 230px;
   background-color: #323232;
   color: #fff;
   text-align: center;
@@ -136,12 +139,26 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer + Toast
   font-size: 14px;
   opacity: 0;
   transition: opacity 0.4s, bottom 0.4s;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
 }
 .toast.show {
   visibility: visible;
   opacity: 1;
   bottom: 50px;
 }
+.toast-btn {
+  background: #fff;
+  color: #000;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-decoration: none;
+  transition: 0.3s;
+}
+.toast-btn:hover { background: #eee; }
 </style>
 
 <script>
@@ -202,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
       toast.classList.add("show");
       setTimeout(() => {
         toast.classList.remove("show");
-      }, 2500);
+      }, 3500);
 
     })
     .catch(err => {
