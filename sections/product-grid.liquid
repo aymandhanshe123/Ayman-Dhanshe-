@@ -1,5 +1,5 @@
 {% comment %}
-Custom Product Grid Section with Popup + AJAX Cart Drawer Update
+Custom Product Grid Section with Popup
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
@@ -12,7 +12,6 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer Update
   <div class="product-grid">
     {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
       <div class="product-card" 
-           data-id="{{ product.variants.first.id }}"
            data-title="{{ product.title }}"
            data-price="{{ product.price | money }}"
            data-url="{{ product.url }}"
@@ -46,7 +45,7 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer Update
         
         <label for="modalSize">Size</label>
         <select id="modalSize">
-          <option value="">Choose your size</option>
+          <option>Choose your size</option>
           <option>XS</option>
           <option>S</option>
           <option>M</option>
@@ -82,12 +81,12 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer Update
   border-radius:8px;
 }
 
-/* Force 3-column grid */
+/* Responsive */
 @media(max-width:1024px) {
-  .product-grid { grid-template-columns: repeat(3, 1fr); }
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media(max-width:600px) {
-  .product-grid { grid-template-columns: repeat(3, 1fr); }
+  .product-grid { grid-template-columns: 1fr; }
 }
 
 /* Popup Modal */
@@ -144,65 +143,24 @@ Custom Product Grid Section with Popup + AJAX Cart Drawer Update
 </style>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  let currentProductId = null;
-  const modal = document.getElementById("productModal");
-  const closeBtn = modal.querySelector(".close");
-
-  // Open modal on product click
-  document.querySelectorAll(".product-card").forEach(card => {
-    card.addEventListener("click", () => {
-      currentProductId = card.dataset.id;
-      document.getElementById("modalImage").src = card.dataset.image;
-      document.getElementById("modalTitle").textContent = card.dataset.title;
-      document.getElementById("modalPrice").textContent = card.dataset.price;
-      document.getElementById("modalDescription").textContent = card.dataset.description;
-      modal.style.display = "flex";
-    });
+document.querySelectorAll(".product-card").forEach(card => {
+  card.addEventListener("click", () => {
+    document.getElementById("modalImage").src = card.dataset.image;
+    document.getElementById("modalTitle").textContent = card.dataset.title;
+    document.getElementById("modalPrice").textContent = card.dataset.price;
+    document.getElementById("modalDescription").textContent = card.dataset.description;
+    document.getElementById("productModal").style.display = "flex";
   });
+});
 
-  // Close modal
-  closeBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-  });
+document.querySelector(".close").addEventListener("click", () => {
+  document.getElementById("productModal").style.display = "none";
+});
 
-  window.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.style.display = "none";
-    }
-  });
-
-  // AJAX Add to Cart + Cart Drawer Update
-  document.querySelector(".add-to-cart").addEventListener("click", () => {
-    if (!currentProductId) return;
-
-    fetch('/cart/add.js', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: currentProductId,
-        quantity: 1
-      })
-    })
-    .then(res => res.json())
-    .then(() => {
-      // Close popup
-      modal.style.display = "none";
-
-      // Open Shopify cart drawer if available
-      if (document.querySelector("cart-drawer")) {
-        document.querySelector("cart-drawer").open(); 
-      } else if (window.Shopify && Shopify.designMode) {
-        console.log("Cart drawer not found. Running in preview.");
-      } else {
-        window.location.href = '/cart';
-      }
-    })
-    .catch(err => {
-      console.error("Error adding to cart:", err);
-      alert("Something went wrong. Try again.");
-    });
-  });
+window.addEventListener("click", (e) => {
+  if (e.target.id === "productModal") {
+    document.getElementById("productModal").style.display = "none";
+  }
 });
 </script>
 
