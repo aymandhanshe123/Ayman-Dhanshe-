@@ -1,24 +1,26 @@
 {% comment %}
-Custom Product Grid Section with Popup + Dynamic Variants
+Custom Product Grid with Popup
+- Shows 6 products (selectable in customizer)
+- Popup dynamically renders variants
+- Add to Cart functional
+- If "Black" + "Medium" selected, also auto-adds "Soft Winter Jacket"
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
   {% if section.settings.heading != blank %}
-    <h2 style="text-align:center; margin-bottom:30px;">
-      {{ section.settings.heading }}
-    </h2>
+    <h2 class="grid-heading">{{ section.settings.heading }}</h2>
   {% endif %}
 
   <div class="product-grid">
-    {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card" 
-           data-product='{{ product | json | escape }}'>
-        <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
-        <h3>{{ product.title }}</h3>
-        <p>{{ product.price | money }}</p>
-      </div>
-    {% else %}
-      <p>No products found in this collection.</p>
+    {% for block in section.blocks %}
+      {% assign product = all_products[block.settings.product] %}
+      {% if product %}
+        <div class="product-card" data-product='{{ product | json | escape }}'>
+          <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
+          <h3>{{ product.title }}</h3>
+          <p>{{ product.price | money }}</p>
+        </div>
+      {% endif %}
     {% endfor %}
   </div>
 
@@ -32,16 +34,21 @@ Custom Product Grid Section with Popup + Dynamic Variants
         <p id="modalPrice"></p>
         <p id="modalDescription"></p>
 
-        <!-- Variant Selector -->
         <div id="variantSelectors"></div>
 
-        <button class="add-to-cart" id="addToCartBtn">Add to Cart →</button>
+        <button class="add-to-cart" id="addToCartBtn">ADD TO CART →</button>
       </div>
     </div>
   </div>
 </section>
 
 <style>
+.grid-heading {
+  text-align:center;
+  margin-bottom:30px;
+  font-size: 2rem;
+  font-weight: bold;
+}
 .product-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -50,10 +57,11 @@ Custom Product Grid Section with Popup + Dynamic Variants
 .product-card {
   border:1px solid #ddd;
   border-radius:12px;
-  padding:10px;
+  padding:15px;
   text-align:center;
   cursor:pointer;
-  transition: 0.3s;
+  transition: transform 0.3s ease;
+  background:#fff;
 }
 .product-card:hover {
   transform: scale(1.03);
@@ -86,9 +94,10 @@ Custom Product Grid Section with Popup + Dynamic Variants
   background:#fff;
   padding:20px;
   border-radius:12px;
-  max-width:400px;
+  max-width:450px;
   width:90%;
   position:relative;
+  animation: fadeIn 0.3s ease;
 }
 .modal-content img {
   width:100%;
@@ -104,13 +113,22 @@ Custom Product Grid Section with Popup + Dynamic Variants
 .add-to-cart {
   display:block;
   width:100%;
-  margin-top:15px;
-  padding:12px;
+  margin-top:20px;
+  padding:14px;
   background:#000;
   color:#fff;
   border:none;
   border-radius:8px;
   cursor:pointer;
+  font-weight:bold;
+  transition: background 0.3s ease;
+}
+.add-to-cart:hover {
+  background:#333;
+}
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(-10px);}
+  to {opacity:1; transform:translateY(0);}
 }
 </style>
 
@@ -118,38 +136,44 @@ Custom Product Grid Section with Popup + Dynamic Variants
 let currentProduct = null;
 let selectedVariantId = null;
 
+// Open popup when product clicked
 document.querySelectorAll(".product-card").forEach(card => {
   card.addEventListener("click", () => {
     const product = JSON.parse(card.dataset.product);
     currentProduct = product;
 
-    // Fill modal
+    // Fill modal fields
     document.getElementById("modalImage").src = product.featured_image?.src || "";
     document.getElementById("modalTitle").textContent = product.title;
     document.getElementById("modalPrice").textContent = Shopify.formatMoney(product.variants[0].price);
-    document.getElementById("modalDescription").textContent = product.body_html.replace(/<[^>]+>/g, '').slice(0, 150);
+    document.getElementById("modalDescription").textContent = product.body_html.replace(/<[^>]+>/g, '').slice(0, 200);
 
     // Build variant selectors
     const variantSelectors = document.getElementById("variantSelectors");
     variantSelectors.innerHTML = "";
 
-    if (product.variants.length > 1) {
-      const select = document.createElement("select");
-      select.id = "variantSelect";
-      product.variants.forEach(variant => {
-        const option = document.createElement("option");
-        option.value = variant.id;
-        option.textContent = variant.title + " - " + Shopify.formatMoney(variant.price);
-        select.appendChild(option);
+    if (product.options && product.options.length > 0) {
+      product.options.forEach((option, index) => {
+        const label = document.createElement("label");
+        label.textContent = option.name;
+        const select = document.createElement("select");
+        select.dataset.index = index;
+
+        option.values.forEach(value => {
+          const opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = value;
+          select.appendChild(opt);
+        });
+
+        select.addEventListener("change", updateVariantSelection);
+        variantSelectors.appendChild(label);
+        variantSelectors.appendChild(select);
       });
-      variantSelectors.appendChild(select);
-      selectedVariantId = product.variants[0].id;
-      select.addEventListener("change", (e) => {
-        selectedVariantId = e.target.value;
-      });
-    } else {
-      selectedVariantId = product.variants[0].id;
     }
+
+    // default variant
+    selectedVariantId = product.variants[0].id;
 
     document.getElementById("productModal").style.display = "flex";
   });
@@ -165,10 +189,33 @@ window.addEventListener("click", (e) => {
   }
 });
 
+// Update variant selection
+function updateVariantSelection() {
+  if (!currentProduct) return;
+  const selects = document.querySelectorAll("#variantSelectors select");
+  const chosenOptions = Array.from(selects).map(s => s.value);
+
+  const matched = currentProduct.variants.find(v =>
+    JSON.stringify(v.options) === JSON.stringify(chosenOptions)
+  );
+
+  if (matched) {
+    selectedVariantId = matched.id;
+    document.getElementById("modalPrice").textContent = Shopify.formatMoney(matched.price);
+    if (matched.featured_image) {
+      document.getElementById("modalImage").src = matched.featured_image.src;
+    }
+  }
+}
+
 // Add to cart
 document.getElementById("addToCartBtn").addEventListener("click", () => {
-  if (!selectedVariantId) return alert("Please select a variant.");
+  if (!selectedVariantId) {
+    alert("Please select a variant.");
+    return;
+  }
 
+  // add selected product
   fetch("/cart/add.js", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -176,6 +223,19 @@ document.getElementById("addToCartBtn").addEventListener("click", () => {
   })
   .then(res => res.json())
   .then(data => {
+    // Check if Black + Medium chosen
+    const chosenVariant = currentProduct.variants.find(v => v.id == selectedVariantId);
+    if (chosenVariant && chosenVariant.options.includes("Black") && chosenVariant.options.includes("Medium")) {
+      // find Soft Winter Jacket product
+      const jacket = {{ all_products['soft-winter-jacket'] | json }};
+      if (jacket && jacket.variants.length > 0) {
+        fetch("/cart/add.js", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: jacket.variants[0].id, quantity: 1 })
+        });
+      }
+    }
     alert("Added to cart: " + data.title);
     document.getElementById("productModal").style.display = "none";
   })
@@ -192,22 +252,22 @@ document.getElementById("addToCartBtn").addEventListener("click", () => {
       "id": "heading",
       "label": "Section Heading",
       "default": "Featured Products"
-    },
-    {
-      "type": "collection",
-      "id": "collection",
-      "label": "Select Collection"
-    },
-    {
-      "type": "range",
-      "id": "products_to_show",
-      "label": "Number of products",
-      "min": 2,
-      "max": 12,
-      "step": 1,
-      "default": 6
     }
   ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Select product"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
   "presets": [
     {
       "name": "Custom Product Grid with Popup",
