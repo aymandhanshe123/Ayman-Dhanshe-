@@ -1,41 +1,140 @@
 {% comment %}
-  Banner Section
+  Custom Banner Section
+  - Editable title, subtitle, button label, button link, background image
+  - Button hover animation
+  - Responsive layout
+  - No Dawn components used
 {% endcomment %}
 
-<section class="relative w-full h-[600px]">
-  <!-- Background Image -->
-  {% if section.settings.image != blank %}
-    <img 
-      src="{{ section.settings.image | img_url: 'master' }}" 
-      alt="{{ section.settings.heading }}" 
-      class="absolute inset-0 w-full h-full object-cover object-center"
-    >
-  {% endif %}
+<section id="gift-banner-{{ section.id }}" class="cg-banner">
+  <style>
+    #gift-banner-{{ section.id }}{
+      --cg-max-width: 1200px;
+      --cg-text-color: {{ section.settings.text_color }};
+      --cg-bg: {% if section.settings.bg_image != blank %}url({{ section.settings.bg_image | img_url: '2000x' }}){% else %}linear-gradient(180deg,#fafafa,#f2f2f2){% endif %};
+      --cg-overlay: rgba(255,255,255,0.78);
+      --cg-btn-bg: {{ section.settings.button_bg }};
+      --cg-btn-color: {{ section.settings.button_color }};
+      --cg-btn-bg-hover: {{ section.settings.button_bg_hover }};
+      --cg-btn-color-hover: {{ section.settings.button_color_hover }};
+      padding: clamp(40px, 7vw, 80px) 16px;
+      background: var(--cg-bg);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #gift-banner-{{ section.id }} .cg-banner__inner{
+      max-width: var(--cg-max-width);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    #gift-banner-{{ section.id }} .cg-banner__card{
+      background: var(--cg-overlay);
+      backdrop-filter: blur(4px);
+      border-radius: 18px;
+      padding: clamp(20px, 4vw, 36px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+    }
+    #gift-banner-{{ section.id }} .cg-banner__eyebrow{
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .85rem;
+      opacity: .7;
+      margin-bottom: .25rem;
+      color: var(--cg-text-color);
+    }
+    #gift-banner-{{ section.id }} .cg-banner__title{
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: 1.1;
+      margin: .25rem 0 .75rem;
+      color: var(--cg-text-color);
+      font-weight: 700;
+    }
+    #gift-banner-{{ section.id }} .cg-banner__subtitle{
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.6;
+      max-width: 62ch;
+      color: var(--cg-text-color);
+      opacity: .9;
+      margin-bottom: 20px;
+    }
+    #gift-banner-{{ section.id }} .cg-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:.6rem;
+      background: var(--cg-btn-bg);
+      color: var(--cg-btn-color);
+      padding:.85rem 1.2rem .85rem 1.1rem;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      font-weight: 600;
+      text-decoration:none;
+      position:relative;
+      transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+      will-change: transform;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+    #gift-banner-{{ section.id }} .cg-btn:after{
+      content: "➜";
+      display:inline-block;
+      transform: translateX(-6px);
+      opacity: .0;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    #gift-banner-{{ section.id }} .cg-btn:hover{
+      transform: translateY(-1px);
+      background: var(--cg-btn-bg-hover);
+      color: var(--cg-btn-color-hover);
+      box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    }
+    #gift-banner-{{ section.id }} .cg-btn:hover:after{
+      transform: translateX(0);
+      opacity: 1;
+    }
 
-  <!-- Overlay -->
-  <div class="absolute inset-0 bg-black/40"></div>
+    /* Desktop layout variant if image is provided as "accent image" (optional) */
+    @media (min-width: 900px){
+      #gift-banner-{{ section.id }} .cg-banner__inner{
+        grid-template-columns: 1.1fr .9fr;
+        align-items: center;
+      }
+      #gift-banner-{{ section.id }} .cg-banner__art{
+        justify-self: end;
+      }
+      #gift-banner-{{ section.id }} .cg-banner__art img{
+        width: min(520px, 40vw);
+        height: auto;
+        border-radius: 20px;
+        box-shadow: 0 8px 28px rgba(0,0,0,.10);
+      }
+    }
+  </style>
 
-  <!-- Content -->
-  <div class="relative z-10 flex flex-col items-center justify-center text-center h-full px-4 text-white">
-    {% if section.settings.heading != blank %}
-      <h1 class="text-4xl md:text-6xl font-bold mb-4">
-        {{ section.settings.heading }}
-      </h1>
-    {% endif %}
+  <div class="cg-banner__inner">
+    <div class="cg-banner__card">
+      {% if section.settings.eyebrow != blank %}
+        <div class="cg-banner__eyebrow">{{ section.settings.eyebrow }}</div>
+      {% endif %}
+      {% if section.settings.title != blank %}
+        <h2 class="cg-banner__title">{{ section.settings.title }}</h2>
+      {% endif %}
+      {% if section.settings.subtitle != blank %}
+        <p class="cg-banner__subtitle">{{ section.settings.subtitle }}</p>
+      {% endif %}
+      {% if section.settings.btn_label != blank and section.settings.btn_link != blank %}
+        <a class="cg-btn" href="{{ section.settings.btn_link }}">
+          {{ section.settings.btn_label }}
+        </a>
+      {% endif %}
+    </div>
 
-    {% if section.settings.subheading != blank %}
-      <p class="text-lg md:text-2xl mb-6">
-        {{ section.settings.subheading }}
-      </p>
-    {% endif %}
-
-    {% if section.settings.button_label != blank and section.settings.button_link != blank %}
-      <a 
-        href="{{ section.settings.button_link }}" 
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition"
-      >
-        {{ section.settings.button_label }}
-      </a>
+    {% if section.settings.accent_image != blank %}
+      <div class="cg-banner__art">
+        <img src="{{ section.settings.accent_image | img_url: '900x' }}" alt="">
+      </div>
     {% endif %}
   </div>
 </section>
@@ -44,41 +143,19 @@
 {
   "name": "Custom Banner",
   "settings": [
-    {
-      "type": "image_picker",
-      "id": "image",
-      "label": "Banner Image"
-    },
-    {
-      "type": "text",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Welcome to Our Store"
-    },
-    {
-      "type": "text",
-      "id": "subheading",
-      "label": "Subheading",
-      "default": "Your subheading goes here"
-    },
-    {
-      "type": "text",
-      "id": "button_label",
-      "label": "Button Label",
-      "default": "Shop Now"
-    },
-    {
-      "type": "url",
-      "id": "button_link",
-      "label": "Button Link",
-      "default": "/collections/all"
-    }
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow (small text)", "default": "The Gift Guide" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Find the ideal gift for your loved ones." },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "Discover joy: Your ultimate holiday gift destination." },
+    { "type": "text", "id": "btn_label", "label": "Button label", "default": "Shop Now" },
+    { "type": "url", "id": "btn_link", "label": "Button link" },
+    { "type": "image_picker", "id": "bg_image", "label": "Background image (full section)" },
+    { "type": "image_picker", "id": "accent_image", "label": "Optional right-side image" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#111111" },
+    { "type": "color", "id": "button_bg", "label": "Button background", "default": "#111111" },
+    { "type": "color", "id": "button_color", "label": "Button text color", "default": "#ffffff" },
+    { "type": "color", "id": "button_bg_hover", "label": "Button hover background", "default": "#2b2b2b" },
+    { "type": "color", "id": "button_color_hover", "label": "Button hover text", "default": "#ffffff" }
   ],
-  "presets": [
-    {
-      "name": "Custom Banner",
-      "category": "Custom"
-    }
-  ]
+  "presets": [{ "name": "Custom Banner" }]
 }
 {% endschema %}
