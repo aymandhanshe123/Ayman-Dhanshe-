@@ -38,21 +38,8 @@ Custom Product Grid Section with Popup
         <p id="modalPrice"></p>
         <p id="modalDescription"></p>
         
-        <label>Color</label>
-        <div class="color-options">
-          <button class="color-btn" data-color="Blue">Blue</button>
-          <button class="color-btn" data-color="Black">Black</button>
-        </div>
-        
-        <label for="modalSize">Size</label>
-        <select id="modalSize">
-          <option value="">Choose your size</option>
-          <option value="XS">XS</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-        </select>
+        <!-- Dynamic options -->
+        <div id="optionSelectors"></div>
         
         <button class="add-to-cart">Add to Cart →</button>
       </div>
@@ -86,7 +73,7 @@ Custom Product Grid Section with Popup
 @media(max-width:1024px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
-/* Mobile = 2x2 */
+/* Mobile */
 @media(max-width:600px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -121,18 +108,16 @@ Custom Product Grid Section with Popup
   font-size:22px;
   cursor:pointer;
 }
-.color-options {
-  display:flex; gap:10px; margin:10px 0;
-}
-.color-btn {
-  flex:1;
-  border:1px solid #000;
-  background:#fff;
+.option-group { margin-bottom: 10px; }
+.option-group label { display:block; margin-bottom:5px; font-weight:bold; }
+.option-select, .option-btn {
   padding:8px;
-  cursor:pointer;
+  border:1px solid #ccc;
   border-radius:6px;
+  margin-right:5px;
+  cursor:pointer;
 }
-.color-btn.active {
+.option-btn.active {
   background:#000;
   color:#fff;
 }
@@ -154,23 +139,88 @@ Custom Product Grid Section with Popup
 </style>
 
 <script>
-let selectedColor = "";
+let currentProduct = null;
 let currentProductHandle = "";
 
+// Utility: Find variant ID by matching selected options
+function findVariantId(product, selections) {
+  const o = product.options; // ["Color","Size"] etc
+  return (product.variants.find(v => {
+    return (!o[0] || v.option1 === selections.option1) &&
+           (!o[1] || v.option2 === selections.option2) &&
+           (!o[2] || v.option3 === selections.option3);
+  }) || {}).id || null;
+}
+
+// Render option selectors dynamically
+function renderOptions(product) {
+  const container = document.getElementById("optionSelectors");
+  container.innerHTML = "";
+
+  product.options.forEach((optName, idx) => {
+    const group = document.createElement("div");
+    group.classList.add("option-group");
+
+    const label = document.createElement("label");
+    label.textContent = optName;
+    group.appendChild(label);
+
+    const values = [...new Set(product.variants.map(v => v[`option${idx+1}`]))];
+
+    if (values.length <= 5) {
+      // Render as buttons
+      values.forEach(val => {
+        const btn = document.createElement("button");
+        btn.textContent = val;
+        btn.className = "option-btn";
+        btn.dataset.optIndex = idx+1;
+        btn.dataset.value = val;
+        btn.addEventListener("click", () => {
+          group.querySelectorAll(".option-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+        });
+        group.appendChild(btn);
+      });
+    } else {
+      // Render as select dropdown
+      const select = document.createElement("select");
+      select.className = "option-select";
+      select.dataset.optIndex = idx+1;
+      const empty = document.createElement("option");
+      empty.value = ""; empty.textContent = "Choose " + optName;
+      select.appendChild(empty);
+      values.forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val;
+        select.appendChild(opt);
+      });
+      group.appendChild(select);
+    }
+
+    container.appendChild(group);
+  });
+}
+
+// Open modal
 document.querySelectorAll(".product-card").forEach(card => {
-  card.addEventListener("click", () => {
-    // Reset state
-    selectedColor = "";
-    document.querySelectorAll(".color-btn").forEach(btn => btn.classList.remove("active"));
+  card.addEventListener("click", async () => {
     document.querySelector(".add-to-cart").textContent = "Add to Cart →";
     document.querySelector(".add-to-cart").classList.remove("added");
 
-    // Fill modal with product data
     document.getElementById("modalImage").src = card.dataset.image;
     document.getElementById("modalTitle").textContent = card.dataset.title;
     document.getElementById("modalPrice").textContent = card.dataset.price;
     document.getElementById("modalDescription").textContent = card.dataset.description;
     currentProductHandle = card.dataset.handle;
+
+    try {
+      const res = await fetch(`/products/${currentProductHandle}.js`);
+      currentProduct = await res.json();
+      renderOptions(currentProduct);
+    } catch(err) {
+      console.error("Product JSON error:", err);
+    }
 
     document.getElementById("productModal").style.display = "flex";
   });
@@ -186,42 +236,34 @@ window.addEventListener("click", (e) => {
   }
 });
 
-// Color selection
-document.querySelectorAll(".color-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedColor = btn.dataset.color;
-  });
-});
-
 // Add to cart
 document.querySelector(".add-to-cart").addEventListener("click", async function() {
-  const size = document.getElementById("modalSize").value;
-  if (!selectedColor) { alert("Please select a color"); return; }
-  if (!size) { alert("Please select a size"); return; }
+  if (!currentProduct) return;
 
-  try {
-    // Fetch product JSON to get variant IDs
-    const res = await fetch(`/products/${currentProductHandle}.js`);
-    const product = await res.json();
+  // Collect selections
+  const selections = {};
+  currentProduct.options.forEach((opt, idx) => {
+    const btnActive = document.querySelector(`.option-btn.active[data-opt-index="${idx+1}"]`);
+    const selectEl = document.querySelector(`.option-select[data-opt-index="${idx+1}"]`);
+    selections[`option${idx+1}`] = btnActive ? btnActive.dataset.value : (selectEl ? selectEl.value : "");
+  });
 
-    // Find matching variant (based on options)
-    const variant = product.variants.find(v => 
-      v.title.toLowerCase().includes(selectedColor.toLowerCase()) &&
-      v.title.toLowerCase().includes(size.toLowerCase())
-    );
-
-    if (!variant) {
-      alert("Variant not found for this selection.");
+  // Validate
+  for (let i=0; i<currentProduct.options.length; i++) {
+    if (!selections[`option${i+1}`]) {
+      alert(`Please select ${currentProduct.options[i]}`);
       return;
     }
+  }
 
-    // Add to cart
+  const id = findVariantId(currentProduct, selections);
+  if (!id) { alert("Variant not found."); return; }
+
+  try {
     await fetch('/cart/add.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: variant.id, quantity: 1 })
+      body: JSON.stringify({ id, quantity: 1 })
     });
 
     this.textContent = "Added to Cart ✓";
