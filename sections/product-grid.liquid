@@ -1,30 +1,3 @@
-{% comment %}
-Custom Product Grid Section
-{% endcomment %}
-
-<section class="custom-product-grid" style="padding:60px 20px;">
-  {% if section.settings.heading != blank %}
-    <h2 style="text-align:center; margin-bottom:30px;">
-      {{ section.settings.heading }}
-    </h2>
-  {% endif %}
-
-  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:20px;">
-    {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div style="border:1px solid #ddd; border-radius:12px; overflow:hidden; padding:10px; text-align:center;">
-        <a href="{{ product.url }}">
-          <img src="{{ product.featured_image | image_url: width: 400 }}" 
-               alt="{{ product.title }}" style="width:100%; height:auto;">
-          <h3 style="margin-top:10px;">{{ product.title }}</h3>
-          <p>{{ product.price | money }}</p>
-        </a>
-      </div>
-    {% else %}
-      <p>No products found in this collection.</p>
-    {% endfor %}
-  </div>
-</section>
-
 {% schema %}
 {
   "name": "Custom Product Grid",
@@ -34,22 +7,22 @@ Custom Product Grid Section
       "id": "heading",
       "label": "Section Heading",
       "default": "Featured Products"
-    },
-    {
-      "type": "collection",
-      "id": "collection",
-      "label": "Select Collection"
-    },
-    {
-      "type": "range",
-      "id": "products_to_show",
-      "label": "Number of products",
-      "min": 2,
-      "max": 12,
-      "step": 1,
-      "default": 4
     }
   ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Select product"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
   "presets": [
     {
       "name": "Custom Product Grid",
@@ -58,3 +31,179 @@ Custom Product Grid Section
   ]
 }
 {% endschema %}
+
+<section class="custom-grid">
+  <h2>{{ section.settings.heading }}</h2>
+  <div class="grid">
+    {% for block in section.blocks %}
+      {% assign product = all_products[block.settings.product] %}
+      {% if product %}
+        <div class="product-card" data-handle="{{ product.handle }}">
+          <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
+          <h3>{{ product.title }}</h3>
+          <p>{{ product.price | money }}</p>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Popup Modal -->
+<div id="product-popup" class="product-popup hidden">
+  <div class="popup-content">
+    <span class="close-popup">&times;</span>
+    <div class="popup-body">
+      <img id="popup-image" src="" alt="">
+      <h2 id="popup-title"></h2>
+      <p id="popup-price"></p>
+      <p id="popup-description"></p>
+
+      <form id="popup-form">
+        <div id="popup-variants"></div>
+        <button type="submit" class="add-to-cart">Add to Cart</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+.custom-grid {
+  text-align: center;
+  padding: 40px 20px;
+}
+.custom-grid .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+.product-card {
+  cursor: pointer;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+.product-card:hover {
+  transform: scale(1.05);
+}
+.product-popup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.product-popup.hidden {
+  display: none;
+}
+.popup-content {
+  background: #fff;
+  padding: 20px;
+  width: 500px;
+  max-width: 90%;
+  border-radius: 10px;
+  position: relative;
+}
+.close-popup {
+  position: absolute;
+  top: 10px; right: 15px;
+  font-size: 22px;
+  cursor: pointer;
+}
+#popup-variants button {
+  margin: 5px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+#popup-variants button.active {
+  background: black;
+  color: white;
+}
+{% endstylesheet %}
+
+{% javascript %}
+document.addEventListener("DOMContentLoaded", () => {
+  const popup = document.getElementById("product-popup");
+  const closePopup = document.querySelector(".close-popup");
+  const form = document.getElementById("popup-form");
+
+  // Click on product card → open popup
+  document.querySelectorAll(".product-card").forEach(card => {
+    card.addEventListener("click", async () => {
+      const handle = card.dataset.handle;
+
+      // Fetch product JSON
+      const res = await fetch(`/products/${handle}.js`);
+      const product = await res.json();
+
+      // Fill popup
+      document.getElementById("popup-image").src = product.images[0];
+      document.getElementById("popup-title").textContent = product.title;
+      document.getElementById("popup-price").textContent = `$${(product.price / 100).toFixed(2)}`;
+      document.getElementById("popup-description").innerHTML = product.description;
+
+      // Render variants
+      const variantContainer = document.getElementById("popup-variants");
+      variantContainer.innerHTML = "";
+      product.variants.forEach(variant => {
+        const btn = document.createElement("button");
+        btn.textContent = variant.title;
+        btn.dataset.id = variant.id;
+        btn.type = "button";
+        btn.onclick = () => {
+          document.querySelectorAll("#popup-variants button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          form.dataset.variantId = variant.id;
+          form.dataset.variantTitle = variant.title;
+        };
+        variantContainer.appendChild(btn);
+      });
+
+      popup.classList.remove("hidden");
+    });
+  });
+
+  // Close popup
+  closePopup.addEventListener("click", () => {
+    popup.classList.add("hidden");
+  });
+
+  // Add to cart
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const variantId = form.dataset.variantId;
+    const variantTitle = form.dataset.variantTitle || "";
+
+    if (!variantId) {
+      alert("Please select a variant");
+      return;
+    }
+
+    // Add selected product
+    await fetch("/cart/add.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: variantId, quantity: 1 })
+    });
+
+    // Special rule → Add Soft Winter Jacket if "Black Medium"
+    if (variantTitle.includes("Black") && variantTitle.includes("Medium")) {
+      const jacketRes = await fetch(`/products/soft-winter-jacket.js`);
+      const jacket = await jacketRes.json();
+      await fetch("/cart/add.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: jacket.variants[0].id, quantity: 1 })
+      });
+    }
+
+    alert("Added to cart!");
+    popup.classList.add("hidden");
+  });
+});
+{% endjavascript %}
