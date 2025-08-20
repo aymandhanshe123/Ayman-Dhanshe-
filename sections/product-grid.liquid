@@ -16,7 +16,8 @@ Custom Product Grid Section with Popup
            data-price="{{ product.price | money }}"
            data-url="{{ product.url }}"
            data-image="{{ product.featured_image | image_url: width: 400 }}"
-           data-description="{{ product.description | strip_html | truncate: 150 }}">
+           data-description="{{ product.description | strip_html | truncate: 150 }}"
+           data-handle="{{ product.handle }}">
         <img src="{{ product.featured_image | image_url: width: 400 }}" 
              alt="{{ product.title }}">
         <h3>{{ product.title }}</h3>
@@ -39,18 +40,18 @@ Custom Product Grid Section with Popup
         
         <label>Color</label>
         <div class="color-options">
-          <button class="color-btn">Blue</button>
-          <button class="color-btn">Black</button>
+          <button class="color-btn" data-color="Blue">Blue</button>
+          <button class="color-btn" data-color="Black">Black</button>
         </div>
         
         <label for="modalSize">Size</label>
         <select id="modalSize">
-          <option>Choose your size</option>
-          <option>XS</option>
-          <option>S</option>
-          <option>M</option>
-          <option>L</option>
-          <option>XL</option>
+          <option value="">Choose your size</option>
+          <option value="XS">XS</option>
+          <option value="S">S</option>
+          <option value="M">M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
         </select>
         
         <button class="add-to-cart">Add to Cart →</button>
@@ -81,12 +82,13 @@ Custom Product Grid Section with Popup
   border-radius:8px;
 }
 
-/* Responsive */
+/* Tablet */
 @media(max-width:1024px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
+/* Mobile = 2x2 */
 @media(max-width:600px) {
-  .product-grid { grid-template-columns: 1fr; }
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Popup Modal */
@@ -128,6 +130,11 @@ Custom Product Grid Section with Popup
   background:#fff;
   padding:8px;
   cursor:pointer;
+  border-radius:6px;
+}
+.color-btn.active {
+  background:#000;
+  color:#fff;
 }
 .add-to-cart {
   display:block;
@@ -139,27 +146,89 @@ Custom Product Grid Section with Popup
   border:none;
   border-radius:8px;
   cursor:pointer;
+  transition:0.3s;
+}
+.add-to-cart.added {
+  background: green;
 }
 </style>
 
 <script>
+let selectedColor = "";
+let currentProductHandle = "";
+
 document.querySelectorAll(".product-card").forEach(card => {
   card.addEventListener("click", () => {
+    // Reset state
+    selectedColor = "";
+    document.querySelectorAll(".color-btn").forEach(btn => btn.classList.remove("active"));
+    document.querySelector(".add-to-cart").textContent = "Add to Cart →";
+    document.querySelector(".add-to-cart").classList.remove("added");
+
+    // Fill modal with product data
     document.getElementById("modalImage").src = card.dataset.image;
     document.getElementById("modalTitle").textContent = card.dataset.title;
     document.getElementById("modalPrice").textContent = card.dataset.price;
     document.getElementById("modalDescription").textContent = card.dataset.description;
+    currentProductHandle = card.dataset.handle;
+
     document.getElementById("productModal").style.display = "flex";
   });
 });
 
+// Close modal
 document.querySelector(".close").addEventListener("click", () => {
   document.getElementById("productModal").style.display = "none";
 });
-
 window.addEventListener("click", (e) => {
   if (e.target.id === "productModal") {
     document.getElementById("productModal").style.display = "none";
+  }
+});
+
+// Color selection
+document.querySelectorAll(".color-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedColor = btn.dataset.color;
+  });
+});
+
+// Add to cart
+document.querySelector(".add-to-cart").addEventListener("click", async function() {
+  const size = document.getElementById("modalSize").value;
+  if (!selectedColor) { alert("Please select a color"); return; }
+  if (!size) { alert("Please select a size"); return; }
+
+  try {
+    // Fetch product JSON to get variant IDs
+    const res = await fetch(`/products/${currentProductHandle}.js`);
+    const product = await res.json();
+
+    // Find matching variant (based on options)
+    const variant = product.variants.find(v => 
+      v.title.toLowerCase().includes(selectedColor.toLowerCase()) &&
+      v.title.toLowerCase().includes(size.toLowerCase())
+    );
+
+    if (!variant) {
+      alert("Variant not found for this selection.");
+      return;
+    }
+
+    // Add to cart
+    await fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: variant.id, quantity: 1 })
+    });
+
+    this.textContent = "Added to Cart ✓";
+    this.classList.add("added");
+  } catch (err) {
+    console.error("Cart error:", err);
+    alert("Failed to add to cart.");
   }
 });
 </script>
