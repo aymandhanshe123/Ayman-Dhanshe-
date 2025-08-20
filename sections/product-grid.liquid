@@ -1,5 +1,5 @@
 {% comment %}
-Custom Product Grid Section with Popup
+Custom Product Grid Section with Popup + AJAX Cart
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
@@ -12,6 +12,7 @@ Custom Product Grid Section with Popup
   <div class="product-grid">
     {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
       <div class="product-card" 
+           data-id="{{ product.variants.first.id }}"
            data-title="{{ product.title }}"
            data-price="{{ product.price | money }}"
            data-url="{{ product.url }}"
@@ -45,7 +46,7 @@ Custom Product Grid Section with Popup
         
         <label for="modalSize">Size</label>
         <select id="modalSize">
-          <option>Choose your size</option>
+          <option value="">Choose your size</option>
           <option>XS</option>
           <option>S</option>
           <option>M</option>
@@ -81,12 +82,12 @@ Custom Product Grid Section with Popup
   border-radius:8px;
 }
 
-/* Responsive */
+/* Force 3-column grid on all screen sizes */
 @media(max-width:1024px) {
-  .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .product-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media(max-width:600px) {
-  .product-grid { grid-template-columns: 1fr; }
+  .product-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Popup Modal */
@@ -143,8 +144,11 @@ Custom Product Grid Section with Popup
 </style>
 
 <script>
+let currentProductId = null;
+
 document.querySelectorAll(".product-card").forEach(card => {
   card.addEventListener("click", () => {
+    currentProductId = card.dataset.id;
     document.getElementById("modalImage").src = card.dataset.image;
     document.getElementById("modalTitle").textContent = card.dataset.title;
     document.getElementById("modalPrice").textContent = card.dataset.price;
@@ -161,6 +165,29 @@ window.addEventListener("click", (e) => {
   if (e.target.id === "productModal") {
     document.getElementById("productModal").style.display = "none";
   }
+});
+
+// AJAX Add to Cart
+document.querySelector(".add-to-cart").addEventListener("click", () => {
+  if (!currentProductId) return;
+
+  fetch('/cart/add.js', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: currentProductId,
+      quantity: 1
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.title + " added to cart!");
+    document.getElementById("productModal").style.display = "none";
+  })
+  .catch(err => {
+    console.error("Error adding to cart:", err);
+    alert("Something went wrong. Try again.");
+  });
 });
 </script>
 
