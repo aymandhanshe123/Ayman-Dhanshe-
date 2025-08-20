@@ -1,24 +1,24 @@
 {% comment %}
-Custom Product Grid Section with Popup
+Custom Product Grid Section with Popup + AJAX Cart + Drawer Refresh + Toast
+Vanilla JS, no jQuery. All selectors scoped by section.id.
 {% endcomment %}
 
-<section class="custom-product-grid" style="padding:60px 20px;">
+<section id="cpg-{{ section.id }}" class="custom-product-grid" style="padding:60px 20px;">
   {% if section.settings.heading != blank %}
     <h2 style="text-align:center; margin-bottom:30px;">
       {{ section.settings.heading }}
     </h2>
   {% endif %}
 
-  <div class="product-grid">
+  <div class="cpg-grid">
     {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card" 
-           data-title="{{ product.title }}"
+      <div class="cpg-card"
+           data-id="{{ product.variants.first.id }}"
+           data-title="{{ product.title | escape }}"
            data-price="{{ product.price | money }}"
-           data-url="{{ product.url }}"
-           data-image="{{ product.featured_image | image_url: width: 400 }}"
-           data-description="{{ product.description | strip_html | truncate: 150 }}">
-        <img src="{{ product.featured_image | image_url: width: 400 }}" 
-             alt="{{ product.title }}">
+           data-image="{{ product.featured_image | image_url: width: 800 }}"
+           data-description="{{ product.description | strip_html | truncate: 220 | escape }}">
+        <img src="{{ product.featured_image | image_url: width: 800 }}" alt="{{ product.title | escape }}">
         <h3>{{ product.title }}</h3>
         <p>{{ product.price | money }}</p>
       </div>
@@ -28,139 +28,234 @@ Custom Product Grid Section with Popup
   </div>
 
   <!-- Popup Modal -->
-  <div id="productModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <div class="modal-body">
-        <img id="modalImage" src="" alt="" />
-        <h3 id="modalTitle"></h3>
-        <p id="modalPrice"></p>
-        <p id="modalDescription"></p>
-        
-        <label>Color</label>
-        <div class="color-options">
-          <button class="color-btn">Blue</button>
-          <button class="color-btn">Black</button>
-        </div>
-        
-        <label for="modalSize">Size</label>
-        <select id="modalSize">
-          <option>Choose your size</option>
-          <option>XS</option>
-          <option>S</option>
-          <option>M</option>
-          <option>L</option>
-          <option>XL</option>
-        </select>
-        
-        <button class="add-to-cart">Add to Cart →</button>
+  <div class="cpg-modal" aria-hidden="true" role="dialog" aria-label="Quick add" data-cpg-el="modal">
+    <div class="cpg-modal__content">
+      <button class="cpg-close" type="button" aria-label="Close">&times;</button>
+      <div class="cpg-modal__body">
+        <img data-cpg-el="img" src="" alt="">
+        <h3 data-cpg-el="title"></h3>
+        <p class="cpg-price" data-cpg-el="price"></p>
+        <p class="cpg-desc" data-cpg-el="desc"></p>
+
+        <label for="cpg-qty-{{ section.id }}">Quantity</label>
+        <input id="cpg-qty-{{ section.id }}" data-cpg-el="qty" type="number" value="1" min="1" />
+
+        <button class="cpg-add" type="button" data-cpg-el="addBtn">Add to Cart →</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="cpg-toast" data-cpg-el="toast" aria-live="polite" aria-atomic="true">
+    <span>✅ Added to cart</span>
+    <div class="cpg-toast__actions">
+      <a href="/cart" class="cpg-toast__btn">View Cart</a>
+      <button type="button" class="cpg-toast__btn cpg-toast__btn--ghost" data-cpg-el="toastDismiss">Continue Shopping</button>
     </div>
   </div>
 </section>
 
 <style>
-.product-grid {
+/* ====== Grid ====== */
+#cpg-{{ section.id }} .cpg-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 28px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
-.product-card {
-  border:1px solid #ddd;
-  border-radius:12px;
-  padding:10px;
+#cpg-{{ section.id }} .cpg-card {
+  border:1px solid #e6e6e6;
+  border-radius:14px;
+  padding:14px;
   text-align:center;
   cursor:pointer;
-  transition: 0.3s;
+  transition: box-shadow .25s ease, transform .25s ease;
+  background:#fff;
 }
-.product-card:hover {
-  transform: scale(1.03);
+#cpg-{{ section.id }} .cpg-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
 }
-.product-card img {
+#cpg-{{ section.id }} .cpg-card img {
   width:100%;
-  border-radius:8px;
+  height:auto;
+  border-radius:10px;
+  margin-bottom:12px;
 }
 
-/* Responsive */
-@media(max-width:1024px) {
-  .product-grid { grid-template-columns: repeat(2, 1fr); }
+/* Tablet */
+@media (max-width: 900px){
+  #cpg-{{ section.id }} .cpg-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
-@media(max-width:600px) {
-  .product-grid { grid-template-columns: 1fr; }
+/* Mobile */
+@media (max-width: 520px){
+  #cpg-{{ section.id }} .cpg-grid { grid-template-columns: 1fr; }
 }
 
-/* Popup Modal */
-.modal {
-  display: none;
+/* ====== Modal ====== */
+#cpg-{{ section.id }} .cpg-modal {
+  display:none;
   position: fixed;
+  inset: 0;
   z-index: 9999;
-  left:0; top:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,.65);
   justify-content: center;
   align-items: center;
 }
-.modal-content {
+#cpg-{{ section.id }} .cpg-modal__content {
   background:#fff;
-  padding:20px;
-  border-radius:12px;
-  max-width:400px;
-  width:90%;
+  border-radius:14px;
+  width:min(90vw, 440px);
+  padding:22px;
   position:relative;
+  animation: cpg-fadeIn .25s ease;
 }
-.modal-content img {
+@keyframes cpg-fadeIn {
+  from { opacity:0; transform: translateY(12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+#cpg-{{ section.id }} .cpg-close {
+  position:absolute; top:10px; right:12px;
+  font-size:26px; line-height:1;
+  background:none; border:none; cursor:pointer;
+}
+#cpg-{{ section.id }} .cpg-modal__body img {
+  width:100%; border-radius:10px; margin-bottom:12px;
+}
+#cpg-{{ section.id }} .cpg-price { font-weight:600; margin:.25rem 0 .5rem; }
+#cpg-{{ section.id }} .cpg-desc { color:#555; font-size:14px; line-height:1.5; margin-bottom:10px; }
+#cpg-{{ section.id }} [data-cpg-el="qty"] {
+  width:90px; padding:8px; border:1px solid #ddd; border-radius:8px; margin-bottom:12px;
+}
+#cpg-{{ section.id }} .cpg-add {
   width:100%;
-  border-radius:8px;
-  margin-bottom:15px;
+  padding:14px;
+  background:#000; color:#fff;
+  border:none; border-radius:10px;
+  cursor:pointer; font-weight:600;
+  transition: background .2s ease, transform .08s ease;
 }
-.close {
-  position:absolute;
-  top:10px; right:15px;
-  font-size:22px;
-  cursor:pointer;
+#cpg-{{ section.id }} .cpg-add:hover { background:#222; }
+#cpg-{{ section.id }} .cpg-add:active { transform: translateY(1px); }
+
+/* ====== Toast ====== */
+#cpg-{{ section.id }} .cpg-toast {
+  visibility:hidden; opacity:0;
+  position: fixed; left:50%; bottom:30px; transform: translateX(-50%);
+  background:#323232; color:#fff;
+  padding:12px 14px; border-radius:10px;
+  display:flex; align-items:center; gap:14px;
+  z-index: 10000;
+  min-width: 280px; max-width: 90vw;
+  transition: opacity .35s ease, bottom .35s ease, visibility .35s;
+  box-shadow: 0 8px 24px rgba(0,0,0,.24);
 }
-.color-options {
-  display:flex; gap:10px; margin:10px 0;
+#cpg-{{ section.id }} .cpg-toast--show {
+  visibility:visible; opacity:1; bottom:50px;
 }
-.color-btn {
-  flex:1;
-  border:1px solid #000;
-  background:#fff;
-  padding:8px;
-  cursor:pointer;
+#cpg-{{ section.id }} .cpg-toast__actions { display:flex; gap:8px; }
+#cpg-{{ section.id }} .cpg-toast__btn {
+  background:#fff; color:#000; border:none; text-decoration:none;
+  padding:6px 12px; border-radius:8px; font-size:13px; cursor:pointer;
 }
-.add-to-cart {
-  display:block;
-  width:100%;
-  margin-top:15px;
-  padding:12px;
-  background:#000;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
+#cpg-{{ section.id }} .cpg-toast__btn--ghost {
+  background:transparent; color:#fff; border:1px solid #fff;
 }
+#cpg-{{ section.id }} .cpg-toast__btn:hover { filter: brightness(.92); }
 </style>
 
 <script>
-document.querySelectorAll(".product-card").forEach(card => {
-  card.addEventListener("click", () => {
-    document.getElementById("modalImage").src = card.dataset.image;
-    document.getElementById("modalTitle").textContent = card.dataset.title;
-    document.getElementById("modalPrice").textContent = card.dataset.price;
-    document.getElementById("modalDescription").textContent = card.dataset.description;
-    document.getElementById("productModal").style.display = "flex";
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('cpg-{{ section.id }}');
+  if (!root) return;
+
+  const modal = root.querySelector('[data-cpg-el="modal"]');
+  const toast = root.querySelector('[data-cpg-el="toast"]');
+  const toastDismiss = root.querySelector('[data-cpg-el="toastDismiss"]');
+  const addBtn = root.querySelector('[data-cpg-el="addBtn"]');
+
+  let currentVariantId = null;
+
+  // Open modal (event delegation so it works even if DOM updates)
+  root.addEventListener('click', (e) => {
+    const card = e.target.closest('.cpg-card');
+    if (!card) return;
+
+    currentVariantId = card.dataset.id;
+    root.querySelector('[data-cpg-el="img"]').src = card.dataset.image;
+    root.querySelector('[data-cpg-el="img"]').alt = card.dataset.title;
+    root.querySelector('[data-cpg-el="title"]').textContent = card.dataset.title;
+    root.querySelector('[data-cpg-el="price"]').textContent = card.dataset.price;
+    root.querySelector('[data-cpg-el="desc"]').textContent = card.dataset.description;
+
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
   });
-});
 
-document.querySelector(".close").addEventListener("click", () => {
-  document.getElementById("productModal").style.display = "none";
-});
+  // Close modal
+  const closeModal = () => {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  };
+  root.querySelector('.cpg-close').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
 
-window.addEventListener("click", (e) => {
-  if (e.target.id === "productModal") {
-    document.getElementById("productModal").style.display = "none";
-  }
+  // Add to cart via AJAX
+  addBtn.addEventListener('click', () => {
+    if (!currentVariantId) return;
+    const qtyInput = root.querySelector('[data-cpg-el="qty"]');
+    const quantity = Math.max(1, parseInt(qtyInput.value || '1', 10));
+
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: currentVariantId, quantity })
+    })
+    .then(r => {
+      if (!r.ok) throw new Error('Add to cart failed');
+      return r.json();
+    })
+    .then(() => {
+      closeModal();
+
+      // Refresh Shopify cart drawer if present (Dawn)
+      const drawerEl = document.querySelector('cart-drawer');
+      if (drawerEl) {
+        fetch('/?sections=cart-drawer')
+          .then(res => res.json())
+          .then(data => {
+            const parser = new DOMParser();
+            const html = parser.parseFromString(data['cart-drawer'], 'text/html');
+            const newDrawer = html.querySelector('cart-drawer');
+            if (newDrawer) {
+              drawerEl.innerHTML = newDrawer.innerHTML;
+              drawerEl.setAttribute('open', 'true');
+              drawerEl.classList.add('active');
+            }
+          })
+          .catch(console.error);
+      }
+
+      // Show toast
+      toast.classList.add('cpg-toast--show');
+      clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(() => {
+        toast.classList.remove('cpg-toast--show');
+      }, 5000);
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Something went wrong adding to cart.');
+    });
+  });
+
+  // Toast dismiss
+  toastDismiss.addEventListener('click', () => {
+    toast.classList.remove('cpg-toast--show');
+  });
 });
 </script>
 
@@ -168,32 +263,10 @@ window.addEventListener("click", (e) => {
 {
   "name": "Custom Product Grid",
   "settings": [
-    {
-      "type": "text",
-      "id": "heading",
-      "label": "Section Heading",
-      "default": "Featured Products"
-    },
-    {
-      "type": "collection",
-      "id": "collection",
-      "label": "Select Collection"
-    },
-    {
-      "type": "range",
-      "id": "products_to_show",
-      "label": "Number of products",
-      "min": 2,
-      "max": 12,
-      "step": 1,
-      "default": 6
-    }
+    { "type": "text", "id": "heading", "label": "Section Heading", "default": "Featured Products" },
+    { "type": "collection", "id": "collection", "label": "Select Collection" },
+    { "type": "range", "id": "products_to_show", "label": "Number of products", "min": 2, "max": 12, "step": 1, "default": 6 }
   ],
-  "presets": [
-    {
-      "name": "Custom Product Grid with Popup",
-      "category": "Custom"
-    }
-  ]
+  "presets": [{ "name": "Custom Product Grid with Popup", "category": "Custom" }]
 }
 {% endschema %}
