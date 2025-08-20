@@ -1,243 +1,152 @@
-{% comment %}
-Custom Product Grid Section with Popup + AJAX Cart Drawer + Toast + View Cart Button
-{% endcomment %}
+{% schema %}
+{
+  "name": "Custom Product Grid",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Select Product"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "Custom Product Grid",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}
 
-<section class="custom-product-grid" style="padding:60px 20px;">
-  {% if section.settings.heading != blank %}
-    <h2 style="text-align:center; margin-bottom:30px;">
-      {{ section.settings.heading }}
-    </h2>
-  {% endif %}
-
-  <div class="product-grid">
-    {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card" 
-           data-id="{{ product.variants.first.id }}"
-           data-title="{{ product.title }}"
-           data-price="{{ product.price | money }}"
-           data-url="{{ product.url }}"
-           data-image="{{ product.featured_image | image_url: width: 400 }}"
-           data-description="{{ product.description | strip_html | truncate: 150 }}">
-        <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
+<section class="custom-grid">
+  <div class="custom-grid__wrapper">
+    {% for block in section.blocks %}
+      {% assign product = all_products[block.settings.product] %}
+      {% if product %}
+      <div class="custom-grid__item" data-product-handle="{{ product.handle }}">
+        <img src="{{ product.featured_image | image_url: width: 600 }}" alt="{{ product.title }}">
         <h3>{{ product.title }}</h3>
         <p>{{ product.price | money }}</p>
+        <button class="open-popup" data-handle="{{ product.handle }}">View</button>
       </div>
-    {% else %}
-      <p>No products found in this collection.</p>
+      {% endif %}
     {% endfor %}
-  </div>
-
-  <!-- Popup Modal -->
-  <div id="productModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <div class="modal-body">
-        <img id="modalImage" src="" alt="" />
-        <h3 id="modalTitle"></h3>
-        <p id="modalPrice"></p>
-        <p id="modalDescription"></p>
-        
-        <label for="modalSize">Size</label>
-        <select id="modalSize">
-          <option value="">Choose your size</option>
-          <option>XS</option>
-          <option>S</option>
-          <option>M</option>
-          <option>L</option>
-          <option>XL</option>
-        </select>
-        
-        <button class="add-to-cart">Add to Cart →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="toast">
-    <span>Added to cart ✔</span>
-    <a href="/cart" class="toast-btn">View Cart</a>
   </div>
 </section>
 
+<!-- Popup -->
+<div id="product-popup" class="popup hidden">
+  <div class="popup-content">
+    <button class="popup-close">×</button>
+    <div id="popup-body"></div>
+  </div>
+</div>
+
 <style>
-.product-grid {
+.custom-grid__wrapper {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
 }
-.product-card {
-  border:1px solid #ddd;
-  border-radius:12px;
-  padding:10px;
-  text-align:center;
-  cursor:pointer;
-  transition: 0.3s;
-}
-.product-card:hover { transform: scale(1.03); }
-.product-card img { width:100%; border-radius:8px; }
-
-@media(max-width:600px) {
-  .product-grid { grid-template-columns: repeat(1, 1fr); }
-}
-
-/* Popup Modal */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  left:0; top:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.6);
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  background:#fff;
-  padding:20px;
-  border-radius:12px;
-  max-width:400px;
-  width:90%;
-  position:relative;
-}
-.modal-content img {
-  width:100%;
-  border-radius:8px;
-  margin-bottom:15px;
-}
-.close {
-  position:absolute;
-  top:10px; right:15px;
-  font-size:22px;
-  cursor:pointer;
-}
-.add-to-cart {
-  display:block;
-  width:100%;
-  margin-top:15px;
-  padding:12px;
-  background:#000;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-/* Toast */
-.toast {
-  visibility: hidden;
-  min-width: 230px;
-  background-color: #323232;
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 12px;
-  position: fixed;
-  z-index: 99999;
-  left: 50%;
-  bottom: 30px;
-  transform: translateX(-50%);
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.4s, bottom 0.4s;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-}
-.toast.show {
-  visibility: visible;
-  opacity: 1;
-  bottom: 50px;
-}
-.toast-btn {
+.custom-grid__item {
   background: #fff;
-  color: #000;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  text-decoration: none;
-  transition: 0.3s;
+  border: 1px solid #eee;
+  padding: 20px;
+  text-align: center;
+  transition: transform .3s ease;
 }
-.toast-btn:hover { background: #eee; }
+.custom-grid__item:hover {
+  transform: translateY(-5px);
+}
+.popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+}
+.popup.hidden { display: none; }
+.popup-content {
+  background: #fff;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  border-radius: 8px;
+}
+.popup-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 22px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
 </style>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  let currentProductId = null;
-  const modal = document.getElementById("productModal");
-  const toast = document.getElementById("toast");
+  const popup = document.getElementById("product-popup");
+  const popupBody = document.getElementById("popup-body");
 
-  // Open modal when clicking a product card
-  document.querySelectorAll(".product-card").forEach(card => {
-    card.addEventListener("click", () => {
-      currentProductId = card.dataset.id;
-      document.getElementById("modalImage").src = card.dataset.image;
-      document.getElementById("modalTitle").textContent = card.dataset.title;
-      document.getElementById("modalPrice").textContent = card.dataset.price;
-      document.getElementById("modalDescription").textContent = card.dataset.description;
-      modal.style.display = "flex";
-    });
-  });
+  document.querySelectorAll(".open-popup").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const handle = btn.dataset.handle;
+      const res = await fetch(`/products/${handle}.js`);
+      const product = await res.json();
 
-  // Close modal
-  document.querySelector(".close").addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-  window.addEventListener("click", (e) => {
-    if (e.target.id === "productModal") {
-      modal.style.display = "none";
-    }
-  });
+      let variantsHtml = product.variants.map(v => 
+        `<option value="${v.id}">${v.title} - ${Shopify.formatMoney(v.price)}</option>`
+      ).join("");
 
-  // AJAX Add to Cart with Drawer Refresh + Toast
-  document.querySelector(".add-to-cart").addEventListener("click", () => {
-    if (!currentProductId) return;
+      popupBody.innerHTML = `
+        <h2>${product.title}</h2>
+        <p>${Shopify.formatMoney(product.price)}</p>
+        <p>${product.description}</p>
+        <select id="variant-select">${variantsHtml}</select>
+        <button id="add-to-cart">Add to Cart</button>
+      `;
 
-    fetch('/cart/add.js', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: currentProductId, quantity: 1 })
-    })
-    .then(res => res.json())
-    .then(() => {
-      modal.style.display = "none";
+      popup.classList.remove("hidden");
 
-      // Try refresh Shopify cart drawer
-      const cartDrawer = document.querySelector('cart-drawer');
-      if (cartDrawer) {
-        fetch('/?sections=cart-drawer')
-          .then(res => res.json())
-          .then(data => {
-            const parser = new DOMParser();
-            const html = parser.parseFromString(data['cart-drawer'], 'text/html');
-            cartDrawer.innerHTML = html.querySelector('cart-drawer').innerHTML;
-            cartDrawer.setAttribute("open", "true");
+      document.getElementById("add-to-cart").onclick = async () => {
+        const variantId = document.getElementById("variant-select").value;
+        
+        await fetch("/cart/add.js", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: variantId, quantity: 1 })
+        });
+
+        // Bonus condition → also add "Soft Winter Jacket"
+        const variantText = document.getElementById("variant-select").selectedOptions[0].text;
+        if(variantText.includes("Black") && variantText.includes("Medium")){
+          const res2 = await fetch(`/products/soft-winter-jacket.js`);
+          const swj = await res2.json();
+          await fetch("/cart/add.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: swj.variants[0].id, quantity: 1 })
           });
-      } 
-      
-      // Show toast
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-      }, 3500);
+        }
 
-    })
-    .catch(err => {
-      console.error("Error adding to cart:", err);
-      alert("Something went wrong. Try again.");
+        alert("Added to cart!");
+      };
     });
+  });
+
+  document.querySelector(".popup-close").addEventListener("click", () => {
+    popup.classList.add("hidden");
   });
 });
 </script>
-
-{% schema %}
-{
-  "name": "Custom Product Grid",
-  "settings": [
-    { "type": "text", "id": "heading", "label": "Section Heading", "default": "Featured Products" },
-    { "type": "collection", "id": "collection", "label": "Select Collection" },
-    { "type": "range", "id": "products_to_show", "label": "Number of products", "min": 2, "max": 12, "step": 1, "default": 6 }
-  ],
-  "presets": [{ "name": "Custom Product Grid with Popup", "category": "Custom" }]
-}
-{% endschema %}
