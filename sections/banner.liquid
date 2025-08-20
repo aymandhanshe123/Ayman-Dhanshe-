@@ -1,100 +1,161 @@
-{% schema %}
-{
-  "name": "Custom Banner",
-  "settings": [
-    {
-      "type": "text",
-      "id": "title",
-      "label": "Banner Title",
-      "default": "Shop the Winter Collection"
-    },
-    {
-      "type": "text",
-      "id": "subtitle",
-      "label": "Banner Subtitle",
-      "default": "Stay warm in style"
-    },
-    {
-      "type": "text",
-      "id": "button_text",
-      "label": "Button Text",
-      "default": "Shop Now"
-    },
-    {
-      "type": "url",
-      "id": "button_link",
-      "label": "Button Link"
-    },
-    {
-      "type": "image_picker",
-      "id": "banner_image",
-      "label": "Banner Background Image"
-    }
-  ],
-  "presets": [
-    {
-      "name": "Custom Banner"
-    }
-  ]
-}
-{% endschema %}
+{% comment %}
+  Custom Banner Section
+  - Editable title, subtitle, button label, button link, background image
+  - Button hover animation
+  - Responsive layout
+  - No Dawn components used
+{% endcomment %}
 
-<section class="custom-banner" style="background-image: url({{ section.settings.banner_image | image_url: 'master' }});">
-  <div class="banner-overlay">
-    <h1>{{ section.settings.title }}</h1>
-    <p>{{ section.settings.subtitle }}</p>
-    {% if section.settings.button_text != blank %}
-      <a href="{{ section.settings.button_link }}" class="banner-btn">
-        {{ section.settings.button_text }}
-      </a>
+<section id="gift-banner-{{ section.id }}" class="cg-banner">
+  <style>
+    #gift-banner-{{ section.id }}{
+      --cg-max-width: 1200px;
+      --cg-text-color: {{ section.settings.text_color }};
+      --cg-bg: {% if section.settings.bg_image != blank %}url({{ section.settings.bg_image | img_url: '2000x' }}){% else %}linear-gradient(180deg,#fafafa,#f2f2f2){% endif %};
+      --cg-overlay: rgba(255,255,255,0.78);
+      --cg-btn-bg: {{ section.settings.button_bg }};
+      --cg-btn-color: {{ section.settings.button_color }};
+      --cg-btn-bg-hover: {{ section.settings.button_bg_hover }};
+      --cg-btn-color-hover: {{ section.settings.button_color_hover }};
+      padding: clamp(40px, 7vw, 80px) 16px;
+      background: var(--cg-bg);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #gift-banner-{{ section.id }} .cg-banner__inner{
+      max-width: var(--cg-max-width);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    #gift-banner-{{ section.id }} .cg-banner__card{
+      background: var(--cg-overlay);
+      backdrop-filter: blur(4px);
+      border-radius: 18px;
+      padding: clamp(20px, 4vw, 36px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+    }
+    #gift-banner-{{ section.id }} .cg-banner__eyebrow{
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .85rem;
+      opacity: .7;
+      margin-bottom: .25rem;
+      color: var(--cg-text-color);
+    }
+    #gift-banner-{{ section.id }} .cg-banner__title{
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: 1.1;
+      margin: .25rem 0 .75rem;
+      color: var(--cg-text-color);
+      font-weight: 700;
+    }
+    #gift-banner-{{ section.id }} .cg-banner__subtitle{
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.6;
+      max-width: 62ch;
+      color: var(--cg-text-color);
+      opacity: .9;
+      margin-bottom: 20px;
+    }
+    #gift-banner-{{ section.id }} .cg-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:.6rem;
+      background: var(--cg-btn-bg);
+      color: var(--cg-btn-color);
+      padding:.85rem 1.2rem .85rem 1.1rem;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      font-weight: 600;
+      text-decoration:none;
+      position:relative;
+      transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+      will-change: transform;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+    #gift-banner-{{ section.id }} .cg-btn:after{
+      content: "➜";
+      display:inline-block;
+      transform: translateX(-6px);
+      opacity: .0;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    #gift-banner-{{ section.id }} .cg-btn:hover{
+      transform: translateY(-1px);
+      background: var(--cg-btn-bg-hover);
+      color: var(--cg-btn-color-hover);
+      box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    }
+    #gift-banner-{{ section.id }} .cg-btn:hover:after{
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    /* Desktop layout variant if image is provided as "accent image" (optional) */
+    @media (min-width: 900px){
+      #gift-banner-{{ section.id }} .cg-banner__inner{
+        grid-template-columns: 1.1fr .9fr;
+        align-items: center;
+      }
+      #gift-banner-{{ section.id }} .cg-banner__art{
+        justify-self: end;
+      }
+      #gift-banner-{{ section.id }} .cg-banner__art img{
+        width: min(520px, 40vw);
+        height: auto;
+        border-radius: 20px;
+        box-shadow: 0 8px 28px rgba(0,0,0,.10);
+      }
+    }
+  </style>
+
+  <div class="cg-banner__inner">
+    <div class="cg-banner__card">
+      {% if section.settings.eyebrow != blank %}
+        <div class="cg-banner__eyebrow">{{ section.settings.eyebrow }}</div>
+      {% endif %}
+      {% if section.settings.title != blank %}
+        <h2 class="cg-banner__title">{{ section.settings.title }}</h2>
+      {% endif %}
+      {% if section.settings.subtitle != blank %}
+        <p class="cg-banner__subtitle">{{ section.settings.subtitle }}</p>
+      {% endif %}
+      {% if section.settings.btn_label != blank and section.settings.btn_link != blank %}
+        <a class="cg-btn" href="{{ section.settings.btn_link }}">
+          {{ section.settings.btn_label }}
+        </a>
+      {% endif %}
+    </div>
+
+    {% if section.settings.accent_image != blank %}
+      <div class="cg-banner__art">
+        <img src="{{ section.settings.accent_image | img_url: '900x' }}" alt="">
+      </div>
     {% endif %}
   </div>
 </section>
 
-<style>
-.custom-banner {
-  position: relative;
-  background-size: cover;
-  background-position: center;
-  text-align: center;
-  padding: 100px 20px;
-  color: white;
+{% schema %}
+{
+  "name": "Custom Banner",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow (small text)", "default": "The Gift Guide" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Find the ideal gift for your loved ones." },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "Discover joy: Your ultimate holiday gift destination." },
+    { "type": "text", "id": "btn_label", "label": "Button label", "default": "Shop Now" },
+    { "type": "url", "id": "btn_link", "label": "Button link" },
+    { "type": "image_picker", "id": "bg_image", "label": "Background image (full section)" },
+    { "type": "image_picker", "id": "accent_image", "label": "Optional right-side image" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#111111" },
+    { "type": "color", "id": "button_bg", "label": "Button background", "default": "#111111" },
+    { "type": "color", "id": "button_color", "label": "Button text color", "default": "#ffffff" },
+    { "type": "color", "id": "button_bg_hover", "label": "Button hover background", "default": "#2b2b2b" },
+    { "type": "color", "id": "button_color_hover", "label": "Button hover text", "default": "#ffffff" }
+  ],
+  "presets": [{ "name": "Custom Banner" }]
 }
-
-.banner-overlay {
-  background: rgba(0, 0, 0, 0.4);
-  display: inline-block;
-  padding: 20px 40px;
-  border-radius: 8px;
-}
-
-.banner-btn {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 12px 24px;
-  background: #fff;
-  color: #000;
-  text-decoration: none;
-  font-weight: bold;
-  border-radius: 25px;
-  transition: all 0.3s ease;
-}
-
-.banner-btn:hover {
-  background: #000;
-  color: #fff;
-  transform: scale(1.05);
-}
-
-@media (max-width: 768px) {
-  .custom-banner {
-    padding: 60px 15px;
-  }
-  .banner-overlay {
-    padding: 15px 25px;
-  }
-  .banner-btn {
-    padding: 10px 20px;
-  }
-}
-</style>
+{% endschema %}
