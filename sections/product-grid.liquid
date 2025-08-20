@@ -1,209 +1,219 @@
-{% schema %}
-{
-  "name": "Custom Product Grid",
-  "settings": [
-    {
-      "type": "text",
-      "id": "heading",
-      "label": "Section Heading",
-      "default": "Featured Products"
-    }
-  ],
-  "blocks": [
-    {
-      "type": "product",
-      "name": "Product",
-      "settings": [
-        {
-          "type": "product",
-          "id": "product",
-          "label": "Select product"
-        }
-      ]
-    }
-  ],
-  "max_blocks": 6,
-  "presets": [
-    {
-      "name": "Custom Product Grid",
-      "category": "Custom"
-    }
-  ]
-}
-{% endschema %}
+{% comment %}
+Custom Product Grid Section
+Pixel-perfect to Figma with modal popup & AJAX Add to Cart
+{% endcomment %}
 
-<section class="custom-grid">
-  <h2>{{ section.settings.heading }}</h2>
-  <div class="grid">
-    {% for block in section.blocks %}
-      {% assign product = all_products[block.settings.product] %}
-      {% if product %}
-        <div class="product-card" data-handle="{{ product.handle }}">
-          <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
-          <h3>{{ product.title }}</h3>
-          <p>{{ product.price | money }}</p>
+<section class="custom-product-grid">
+  <div class="grid-container">
+    {% for product in collections['frontpage'].products limit:6 %}
+      <div class="product-card" data-handle="{{ product.handle }}">
+        <div class="product-image">
+          <img src="{{ product.featured_image | img_url: '600x600' }}" alt="{{ product.title }}">
         </div>
-      {% endif %}
+        <div class="product-info">
+          <h3 class="product-title">{{ product.title }}</h3>
+          <p class="product-price">{{ product.price | money }}</p>
+        </div>
+      </div>
     {% endfor %}
+  </div>
+
+  <!-- Modal -->
+  <div class="product-modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close">×</button>
+      <div class="modal-body">
+        <div class="modal-image">
+          <img id="modal-product-image" src="" alt="">
+        </div>
+        <div class="modal-details">
+          <h2 id="modal-product-title"></h2>
+          <p id="modal-product-price"></p>
+          <p id="modal-product-desc"></p>
+
+          <form id="add-to-cart-form">
+            <label>Color</label>
+            <div id="modal-colors" class="variant-options"></div>
+
+            <label>Size</label>
+            <select id="modal-sizes" name="id"></select>
+
+            <button type="submit" class="add-to-cart-btn">
+              ADD TO CART →
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- Popup Modal -->
-<div id="product-popup" class="product-popup hidden">
-  <div class="popup-content">
-    <span class="close-popup">&times;</span>
-    <div class="popup-body">
-      <img id="popup-image" src="" alt="">
-      <h2 id="popup-title"></h2>
-      <p id="popup-price"></p>
-      <p id="popup-description"></p>
-
-      <form id="popup-form">
-        <div id="popup-variants"></div>
-        <button type="submit" class="add-to-cart">Add to Cart</button>
-      </form>
-    </div>
-  </div>
-</div>
-
-{% stylesheet %}
-.custom-grid {
-  text-align: center;
-  padding: 40px 20px;
-}
-.custom-grid .grid {
+<style>
+/* Grid */
+.custom-product-grid .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+  max-width: 1920px;
+  margin: auto;
 }
 .product-card {
   cursor: pointer;
-  border: 1px solid #eee;
-  padding: 15px;
-  border-radius: 8px;
-  transition: transform 0.2s;
+  position: relative;
+  background: #fff;
+  width: 919px;
+  height: 943px;
+  overflow: hidden;
 }
-.product-card:hover {
-  transform: scale(1.05);
+.product-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.product-popup {
+.product-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: rgba(255,255,255,0.9);
+  padding: 20px;
+}
+.product-title {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 5px;
+}
+.product-price {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+/* Modal */
+.product-modal.hidden { display: none; }
+.product-modal .modal-overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+  background: rgba(0,0,0,0.5);
 }
-.product-popup.hidden {
-  display: none;
-}
-.popup-content {
+.product-modal .modal-content {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
   background: #fff;
   padding: 20px;
-  width: 500px;
-  max-width: 90%;
-  border-radius: 10px;
-  position: relative;
+  max-width: 600px;
+  width: 100%;
 }
-.close-popup {
+.modal-close {
   position: absolute;
-  top: 10px; right: 15px;
-  font-size: 22px;
+  top: 10px; right: 10px;
+  background: none; border: none;
+  font-size: 24px; cursor: pointer;
+}
+.modal-body {
+  display: flex;
+  gap: 20px;
+}
+.modal-image img {
+  width: 120px; height: auto;
+}
+.modal-details h2 {
+  font-size: 20px; margin: 0 0 10px;
+}
+.variant-options {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+.variant-options button {
+  border: 1px solid #000;
+  background: #fff;
+  padding: 5px 15px;
   cursor: pointer;
 }
-#popup-variants button {
-  margin: 5px;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  background: #f9f9f9;
+.variant-options button.active {
+  background: #000; color: #fff;
+}
+.add-to-cart-btn {
+  margin-top: 15px;
+  width: 100%;
+  background: #000;
+  color: #fff;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
   cursor: pointer;
 }
-#popup-variants button.active {
-  background: black;
-  color: white;
+.add-to-cart-btn:hover {
+  background: #333;
 }
-{% endstylesheet %}
+</style>
 
-{% javascript %}
+<script>
 document.addEventListener("DOMContentLoaded", () => {
-  const popup = document.getElementById("product-popup");
-  const closePopup = document.querySelector(".close-popup");
-  const form = document.getElementById("popup-form");
+  const modal = document.querySelector(".product-modal");
+  const modalImage = document.getElementById("modal-product-image");
+  const modalTitle = document.getElementById("modal-product-title");
+  const modalPrice = document.getElementById("modal-product-price");
+  const modalDesc = document.getElementById("modal-product-desc");
+  const modalColors = document.getElementById("modal-colors");
+  const modalSizes = document.getElementById("modal-sizes");
 
-  // Click on product card → open popup
+  // Open modal
   document.querySelectorAll(".product-card").forEach(card => {
-    card.addEventListener("click", async () => {
-      const handle = card.dataset.handle;
+    card.addEventListener("click", () => {
+      fetch(`/products/${card.dataset.handle}.js`)
+        .then(res => res.json())
+        .then(product => {
+          modalImage.src = product.images[0];
+          modalTitle.textContent = product.title;
+          modalPrice.textContent = Shopify.formatMoney(product.price);
+          modalDesc.textContent = product.description;
 
-      // Fetch product JSON
-      const res = await fetch(`/products/${handle}.js`);
-      const product = await res.json();
+          // Colors
+          modalColors.innerHTML = "";
+          const colors = [...new Set(product.variants.map(v => v.option1))];
+          colors.forEach(color => {
+            const btn = document.createElement("button");
+            btn.textContent = color;
+            btn.onclick = () => {
+              document.querySelectorAll("#modal-colors button").forEach(b => b.classList.remove("active"));
+              btn.classList.add("active");
+              modalSizes.innerHTML = "";
+              product.variants.filter(v => v.option1 === color).forEach(v => {
+                const opt = document.createElement("option");
+                opt.value = v.id;
+                opt.textContent = v.option2 || "One Size";
+                modalSizes.appendChild(opt);
+              });
+            };
+            modalColors.appendChild(btn);
+          });
 
-      // Fill popup
-      document.getElementById("popup-image").src = product.images[0];
-      document.getElementById("popup-title").textContent = product.title;
-      document.getElementById("popup-price").textContent = `$${(product.price / 100).toFixed(2)}`;
-      document.getElementById("popup-description").innerHTML = product.description;
-
-      // Render variants
-      const variantContainer = document.getElementById("popup-variants");
-      variantContainer.innerHTML = "";
-      product.variants.forEach(variant => {
-        const btn = document.createElement("button");
-        btn.textContent = variant.title;
-        btn.dataset.id = variant.id;
-        btn.type = "button";
-        btn.onclick = () => {
-          document.querySelectorAll("#popup-variants button").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          form.dataset.variantId = variant.id;
-          form.dataset.variantTitle = variant.title;
-        };
-        variantContainer.appendChild(btn);
-      });
-
-      popup.classList.remove("hidden");
+          modal.classList.remove("hidden");
+        });
     });
   });
 
-  // Close popup
-  closePopup.addEventListener("click", () => {
-    popup.classList.add("hidden");
-  });
+  // Close modal
+  document.querySelector(".modal-close").onclick = () => modal.classList.add("hidden");
+  document.querySelector(".modal-overlay").onclick = () => modal.classList.add("hidden");
 
-  // Add to cart
-  form.addEventListener("submit", async (e) => {
+  // AJAX Add to Cart
+  document.getElementById("add-to-cart-form").addEventListener("submit", e => {
     e.preventDefault();
-    const variantId = form.dataset.variantId;
-    const variantTitle = form.dataset.variantTitle || "";
-
-    if (!variantId) {
-      alert("Please select a variant");
-      return;
-    }
-
-    // Add selected product
-    await fetch("/cart/add.js", {
+    const formData = { id: modalSizes.value, quantity: 1 };
+    fetch("/cart/add.js", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: variantId, quantity: 1 })
+      body: JSON.stringify(formData)
+    })
+    .then(res => res.json())
+    .then(() => {
+      alert("Added to cart!");
+      modal.classList.add("hidden");
     });
-
-    // Special rule → Add Soft Winter Jacket if "Black Medium"
-    if (variantTitle.includes("Black") && variantTitle.includes("Medium")) {
-      const jacketRes = await fetch(`/products/soft-winter-jacket.js`);
-      const jacket = await jacketRes.json();
-      await fetch("/cart/add.js", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: jacket.variants[0].id, quantity: 1 })
-      });
-    }
-
-    alert("Added to cart!");
-    popup.classList.add("hidden");
   });
 });
-{% endjavascript %}
+</script>
