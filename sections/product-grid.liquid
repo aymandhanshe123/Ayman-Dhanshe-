@@ -1,5 +1,5 @@
 {% comment %}
-  Custom Product Grid Section with Popup and special add-to-cart logic
+Custom Product Grid Section with Popup and Auto Bonus Product Add
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
@@ -11,14 +11,15 @@
 
   <div class="product-grid">
     {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card"
+      <div class="product-card" 
            data-title="{{ product.title }}"
            data-price="{{ product.price | money }}"
            data-url="{{ product.url }}"
            data-image="{{ product.featured_image | image_url: width: 400 }}"
            data-description="{{ product.description | strip_html | truncate: 150 }}"
            data-handle="{{ product.handle }}">
-        <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
+        <img src="{{ product.featured_image | image_url: width: 400 }}" 
+             alt="{{ product.title }}">
         <h3>{{ product.title }}</h3>
         <p>{{ product.price | money }}</p>
       </div>
@@ -28,24 +29,27 @@
   </div>
 
   <!-- Popup Modal -->
-  <div id="productModal" class="modal">
+  <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-content">
-      <span class="close">&times;</span>
+      <button class="close" aria-label="Close popup">&times;</button>
       <div class="modal-body">
         <img id="modalImage" src="" alt="" />
         <h3 id="modalTitle"></h3>
         <p id="modalPrice"></p>
         <p id="modalDescription"></p>
-
+        
+        <!-- Dynamic options -->
         <div id="optionSelectors"></div>
-
+        
         <button class="add-to-cart">Add to Cart →</button>
 
-        <!-- Post add-to-cart actions -->
-        <div id="postAddActions" style="display:none; margin-top:20px; text-align:center;">
-          <p>Item added to your cart!</p>
-          <a href="/cart" class="view-cart-btn" style="margin-right:10px; padding:10px 15px; background:#000; color:#fff; border-radius:6px; text-decoration:none;">View Cart</a>
-          <button class="continue-shopping-btn" style="padding:10px 15px; background:#ddd; border:none; border-radius:6px; cursor:pointer;">Continue Shopping</button>
+        <div id="postAddActions" style="display:none; margin-top: 15px; text-align:center;">
+          <button class="view-cart-btn" style="margin-right:10px; padding:10px 15px; border:none; background:#000; color:#fff; border-radius:6px; cursor:pointer;">
+            View Cart
+          </button>
+          <button class="continue-shopping-btn" style="padding:10px 15px; border:none; background:#666; color:#fff; border-radius:6px; cursor:pointer;">
+            Continue Shopping
+          </button>
         </div>
       </div>
     </div>
@@ -100,7 +104,7 @@
   border-radius:12px;
   max-width:400px;
   width:90%;
-  position:relative;
+  position: relative;
 }
 .modal-content img {
   width:100%;
@@ -112,6 +116,9 @@
   top:10px; right:15px;
   font-size:22px;
   cursor:pointer;
+  background:none;
+  border:none;
+  line-height:1;
 }
 .option-group { margin-bottom: 10px; }
 .option-group label { display:block; margin-bottom:5px; font-weight:bold; }
@@ -144,11 +151,11 @@
 </style>
 
 <script>
-function initProductPopup() {
+(function(){
   let currentProduct = null;
   let currentProductHandle = "";
 
-  // Find variant ID by selected options
+  // Utility: Find variant ID by matching selected options
   function findVariantId(product, selections) {
     const o = product.options;
     return (product.variants.find(v => {
@@ -158,7 +165,7 @@ function initProductPopup() {
     }) || {}).id || null;
   }
 
-  // Render product variant options dynamically
+  // Render option selectors dynamically
   function renderOptions(product) {
     const container = document.getElementById("optionSelectors");
     container.innerHTML = "";
@@ -168,12 +175,13 @@ function initProductPopup() {
       group.classList.add("option-group");
 
       const label = document.createElement("label");
-      label.textContent = typeof optName === "string" ? optName : String(optName);
+      label.textContent = optName;
       group.appendChild(label);
 
       const values = [...new Set(product.variants.map(v => v[`option${idx+1}`]))];
 
       if (values.length <= 5) {
+        // Render as buttons
         values.forEach(val => {
           const btn = document.createElement("button");
           btn.textContent = val;
@@ -187,12 +195,13 @@ function initProductPopup() {
           group.appendChild(btn);
         });
       } else {
+        // Render as select dropdown
         const select = document.createElement("select");
         select.className = "option-select";
         select.dataset.optIndex = idx+1;
         const empty = document.createElement("option");
-        empty.value = "";
-        empty.textContent = "Choose " + label.textContent;
+        empty.value = ""; 
+        empty.textContent = "Choose " + optName;
         select.appendChild(empty);
         values.forEach(val => {
           const opt = document.createElement("option");
@@ -207,51 +216,60 @@ function initProductPopup() {
     });
   }
 
-  // When clicking product cards, open popup
-  document.querySelectorAll(".product-card").forEach(card => {
-    card.addEventListener("click", async () => {
-      // Reset UI states
-      const addToCartBtn = document.querySelector(".add-to-cart");
-      addToCartBtn.textContent = "Add to Cart →";
-      addToCartBtn.classList.remove("added");
-      document.getElementById("postAddActions").style.display = "none";
+  // Open modal when product card clicked
+  function openModal(card) {
+    // Reset add to cart button
+    const addToCartBtn = document.querySelector(".add-to-cart");
+    addToCartBtn.textContent = "Add to Cart →";
+    addToCartBtn.classList.remove("added");
+    document.getElementById("postAddActions").style.display = "none";
 
-      document.getElementById("modalImage").src = card.dataset.image;
-      document.getElementById("modalTitle").textContent = card.dataset.title;
-      document.getElementById("modalPrice").textContent = card.dataset.price;
-      document.getElementById("modalDescription").textContent = card.dataset.description;
-      currentProductHandle = card.dataset.handle;
+    // Fill modal with product data
+    document.getElementById("modalImage").src = card.dataset.image;
+    document.getElementById("modalTitle").textContent = card.dataset.title;
+    document.getElementById("modalPrice").textContent = card.dataset.price;
+    document.getElementById("modalDescription").textContent = card.dataset.description;
+    currentProductHandle = card.dataset.handle;
 
-      try {
-        const res = await fetch(`/products/${currentProductHandle}.js`);
-        currentProduct = await res.json();
-        renderOptions(currentProduct);
-      } catch(err) {
+    // Fetch product JSON and render options
+    fetch(`/products/${currentProductHandle}.js`)
+      .then(res => res.json())
+      .then(product => {
+        currentProduct = product;
+        renderOptions(product);
+      })
+      .catch(err => {
         console.error("Product JSON error:", err);
-      }
+      });
 
-      document.getElementById("productModal").style.display = "flex";
-    });
-  });
+    // Show modal
+    document.getElementById("productModal").style.display = "flex";
+  }
 
-  // Close popup
-  document.querySelector(".close").addEventListener("click", () => {
+  // Close modal
+  function closeModal() {
     document.getElementById("productModal").style.display = "none";
     document.getElementById("postAddActions").style.display = "none";
+  }
+
+  // Add event listeners for product cards
+  document.querySelectorAll(".product-card").forEach(card => {
+    card.addEventListener("click", () => openModal(card));
   });
 
-  window.addEventListener("click", (e) => {
-    if (e.target.id === "productModal") {
-      document.getElementById("productModal").style.display = "none";
-      document.getElementById("postAddActions").style.display = "none";
-    }
+  // Close modal on clicking close button
+  document.querySelector(".close").addEventListener("click", closeModal);
+
+  // Close modal on clicking outside modal content
+  window.addEventListener("click", e => {
+    if (e.target.id === "productModal") closeModal();
   });
 
-  // Add to cart button logic including special product logic
+  // Add to cart button logic with bonus product logic
   document.querySelector(".add-to-cart").addEventListener("click", async function() {
     if (!currentProduct) return;
 
-    // Gather selections for options
+    // Collect selected options
     const selections = {};
     currentProduct.options.forEach((opt, idx) => {
       const btnActive = document.querySelector(`.option-btn.active[data-opt-index="${idx+1}"]`);
@@ -259,69 +277,65 @@ function initProductPopup() {
       selections[`option${idx+1}`] = btnActive ? btnActive.dataset.value : (selectEl ? selectEl.value : "");
     });
 
-    // Validate selections
-    for (let i = 0; i < currentProduct.options.length; i++) {
+    // Validate selection
+    for (let i=0; i < currentProduct.options.length; i++) {
       if (!selections[`option${i+1}`]) {
         alert(`Please select ${currentProduct.options[i]}`);
         return;
       }
     }
 
-    // Find variant ID for selected options
-    const id = findVariantId(currentProduct, selections);
-    if (!id) { alert("Variant not found."); return; }
+    const variantId = findVariantId(currentProduct, selections);
+    if (!variantId) {
+      alert("Variant not found.");
+      return;
+    }
 
     try {
-      // Add selected product variant to cart
+      // Add main product variant to cart
       await fetch('/cart/add.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, quantity: 1 })
+        body: JSON.stringify({ id: variantId, quantity: 1 })
       });
 
-      // Special condition: If Size = "M" and Color = "Black", add Soft Winter Jacket variant (fixed variant ID)
+      // If size is "M" and color is "Black", add Soft Winter Jacket variant automatically
       if (selections.option1 === "M" && selections.option2 === "Black") {
-        const softWinterJacketVariantId = 47649768440051; // Use exact variant ID you provided
+        const softWinterJacketVariantId = 47649768440051; // Your given variant ID
         try {
           await fetch('/cart/add.js', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: softWinterJacketVariantId, quantity: 1 })
           });
-        } catch (bonusErr) {
-          console.error("Failed to auto-add Soft Winter Jacket:", bonusErr);
+        } catch (err) {
+          console.error("Failed to auto-add Soft Winter Jacket:", err);
         }
       }
 
-      // Update UI after successful add
+      // Update UI
       this.textContent = "Added to Cart ✓";
       this.classList.add("added");
 
-      // Show post add to cart buttons
+      // Show post add actions buttons
       document.getElementById("postAddActions").style.display = "block";
 
     } catch (err) {
-      console.error("Cart error:", err);
+      console.error("Add to cart error:", err);
       alert("Failed to add to cart.");
     }
   });
 
-  // Continue shopping button hides popup
-  document.querySelector(".continue-shopping-btn").addEventListener("click", function() {
-    document.getElementById("productModal").style.display = "none";
-    document.getElementById("postAddActions").style.display = "none";
+  // Post add action buttons
+  document.querySelector(".view-cart-btn").addEventListener("click", () => {
+    window.location.href = "/cart";
   });
-}
 
-document.addEventListener("DOMContentLoaded", initProductPopup);
-
-if (Shopify.designMode) {
-  document.addEventListener('shopify:section:load', function(event) {
-    if (event.target.querySelector('.custom-product-grid')) {
-      initProductPopup();
-    }
+  document.querySelector(".continue-shopping-btn").addEventListener("click", () => {
+    closeModal();
   });
-}
+
+})();
 </script>
 
 {% schema %}
@@ -347,6 +361,12 @@ if (Shopify.designMode) {
       "max": 12,
       "step": 1,
       "default": 6
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Product Grid",
+      "category": "Custom"
     }
   ]
 }
