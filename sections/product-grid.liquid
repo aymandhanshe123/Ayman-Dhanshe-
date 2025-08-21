@@ -40,6 +40,13 @@
         <div id="optionSelectors"></div>
 
         <button class="add-to-cart">Add to Cart →</button>
+
+        <!-- Added post add-to-cart actions -->
+        <div id="postAddActions" style="display:none; margin-top:20px; text-align:center;">
+          <p>Item added to your cart!</p>
+          <a href="/cart" class="view-cart-btn" style="margin-right:10px; padding:10px 15px; background:#000; color:#fff; border-radius:6px; text-decoration:none;">View Cart</a>
+          <button class="continue-shopping-btn" style="padding:10px 15px; background:#ddd; border:none; border-radius:6px; cursor:pointer;">Continue Shopping</button>
+        </div>
       </div>
     </div>
   </div>
@@ -200,8 +207,11 @@ function initProductPopup() {
 
   document.querySelectorAll(".product-card").forEach(card => {
     card.addEventListener("click", async () => {
-      document.querySelector(".add-to-cart").textContent = "Add to Cart →";
-      document.querySelector(".add-to-cart").classList.remove("added");
+      // Reset UI states
+      const addToCartBtn = document.querySelector(".add-to-cart");
+      addToCartBtn.textContent = "Add to Cart →";
+      addToCartBtn.classList.remove("added");
+      document.getElementById("postAddActions").style.display = "none";
 
       document.getElementById("modalImage").src = card.dataset.image;
       document.getElementById("modalTitle").textContent = card.dataset.title;
@@ -223,11 +233,13 @@ function initProductPopup() {
 
   document.querySelector(".close").addEventListener("click", () => {
     document.getElementById("productModal").style.display = "none";
+    document.getElementById("postAddActions").style.display = "none";
   });
 
   window.addEventListener("click", (e) => {
     if (e.target.id === "productModal") {
       document.getElementById("productModal").style.display = "none";
+      document.getElementById("postAddActions").style.display = "none";
     }
   });
 
@@ -280,10 +292,18 @@ function initProductPopup() {
       this.textContent = "Added to Cart ✓";
       this.classList.add("added");
 
+      // Show View Cart / Continue Shopping buttons
+      document.getElementById("postAddActions").style.display = "block";
+
     } catch (err) {
       console.error("Cart error:", err);
       alert("Failed to add to cart.");
     }
+  });
+
+  document.querySelector(".continue-shopping-btn").addEventListener("click", function() {
+    document.getElementById("productModal").style.display = "none";
+    document.getElementById("postAddActions").style.display = "none";
   });
 }
 
