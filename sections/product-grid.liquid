@@ -1,7 +1,3 @@
-{% comment %}
-  Custom Product Grid Section with Popup and special add-to-cart logic
-{% endcomment %}
-
 <section class="custom-product-grid" style="padding:60px 20px;">
   {% if section.settings.heading != blank %}
     <h2 style="text-align:center; margin-bottom:30px;">
@@ -41,7 +37,6 @@
 
         <button class="add-to-cart">Add to Cart →</button>
 
-        <!-- Post add-to-cart actions -->
         <div id="postAddActions" style="display:none; margin-top:20px; text-align:center;">
           <p>Item added to your cart!</p>
           <a href="/cart" class="view-cart-btn" style="margin-right:10px; padding:10px 15px; background:#000; color:#fff; border-radius:6px; text-decoration:none;">View Cart</a>
@@ -74,16 +69,13 @@
   border-radius:8px;
 }
 
-/* Tablet */
 @media(max-width:1024px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
-/* Mobile */
 @media(max-width:600px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Popup Modal */
 .modal {
   display: none;
   position: fixed;
@@ -148,17 +140,16 @@ function initProductPopup() {
   let currentProduct = null;
   let currentProductHandle = "";
 
-  // Find variant ID by selected options
+  // Find variant by selected options
   function findVariantId(product, selections) {
-    const o = product.options;
     return (product.variants.find(v => {
-      return (!o[0] || v.option1 === selections.option1) &&
-             (!o[1] || v.option2 === selections.option2) &&
-             (!o[2] || v.option3 === selections.option3);
+      return (!product.options[0] || v.option1 === selections.option1) &&
+             (!product.options[1] || v.option2 === selections.option2) &&
+             (!product.options[2] || v.option3 === selections.option3);
     }) || {}).id || null;
   }
 
-  // Render product variant options dynamically
+  // Render options dynamically
   function renderOptions(product) {
     const container = document.getElementById("optionSelectors");
     container.innerHTML = "";
@@ -168,9 +159,10 @@ function initProductPopup() {
       group.classList.add("option-group");
 
       const label = document.createElement("label");
-      label.textContent = typeof optName === "string" ? optName : String(optName);
+      label.textContent = optName;
       group.appendChild(label);
 
+      // Gather unique values
       const values = [...new Set(product.variants.map(v => v[`option${idx+1}`]))];
 
       if (values.length <= 5) {
@@ -207,7 +199,23 @@ function initProductPopup() {
     });
   }
 
-  // When clicking product cards, open popup
+  // Map option names to indexes for Size and Color detection
+  function getOptionIndexes(product) {
+    const sizeIndex = product.options.findIndex(o => o.toLowerCase().includes("size"));
+    const colorIndex = product.options.findIndex(o => o.toLowerCase().includes("color"));
+    return { sizeIndex, colorIndex };
+  }
+
+  // Add product to cart
+  async function addToCart(variantId, quantity = 1) {
+    return fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: variantId, quantity })
+    });
+  }
+
+  // Product card click event
   document.querySelectorAll(".product-card").forEach(card => {
     card.addEventListener("click", async () => {
       // Reset UI states
@@ -234,7 +242,7 @@ function initProductPopup() {
     });
   });
 
-  // Close popup
+  // Close modal
   document.querySelector(".close").addEventListener("click", () => {
     document.getElementById("productModal").style.display = "none";
     document.getElementById("postAddActions").style.display = "none";
@@ -247,11 +255,11 @@ function initProductPopup() {
     }
   });
 
-  // Add to cart button logic including special product logic
+  // Add to cart click handler
   document.querySelector(".add-to-cart").addEventListener("click", async function() {
     if (!currentProduct) return;
 
-    // Gather selections for options
+    // Collect selections
     const selections = {};
     currentProduct.options.forEach((opt, idx) => {
       const btnActive = document.querySelector(`.option-btn.active[data-opt-index="${idx+1}"]`);
@@ -259,7 +267,7 @@ function initProductPopup() {
       selections[`option${idx+1}`] = btnActive ? btnActive.dataset.value : (selectEl ? selectEl.value : "");
     });
 
-    // Validate selections
+    // Validate all options selected
     for (let i = 0; i < currentProduct.options.length; i++) {
       if (!selections[`option${i+1}`]) {
         alert(`Please select ${currentProduct.options[i]}`);
@@ -267,52 +275,65 @@ function initProductPopup() {
       }
     }
 
-    // Find variant ID for selected options
-    const id = findVariantId(currentProduct, selections);
-    if (!id) { alert("Variant not found."); return; }
+    // Find variant id
+    const variantId = findVariantId(currentProduct, selections);
+    if (!variantId) {
+      alert("Variant not found.");
+      return;
+    }
+
+    // Get Size and Color option indexes
+    const { sizeIndex, colorIndex } = getOptionIndexes(currentProduct);
+    if (sizeIndex === -1 || colorIndex === -1) {
+      console.warn("Size or Color option not found in product options.");
+    }
+
+    // Extract selected Size and Color values (case insensitive trim)
+    const selectedSize = sizeIndex !== -1 ? selections[`option${sizeIndex+1}`].trim().toLowerCase() : null;
+    const selectedColor = colorIndex !== -1 ? selections[`option${colorIndex+1}`].trim().toLowerCase() : null;
+
+    console.log("Selected Size:", selectedSize, "Selected Color:", selectedColor);
 
     try {
-      // Add selected product variant to cart
-      await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, quantity: 1 })
-      });
+      // Add main product variant
+      await addToCart(variantId, 1);
 
-      // Special condition: If Size = "M" and Color = "Black", add Soft Winter Jacket
-      if (selections.option1 === "M" && selections.option2 === "Black") {
+      // Check if selected variant matches Black & M
+      if (selectedSize === "m" && selectedColor === "black") {
+        // Fetch Soft Winter Jacket product JSON
+        const bonusHandle = "soft-winter-jacket"; // CHANGE THIS if needed
         try {
-          const res = await fetch('/products/soft-winter-jacket.js');
-          const bonusProduct = await res.json();
+          const resBonus = await fetch(`/products/${bonusHandle}.js`);
+          const bonusProduct = await resBonus.json();
+
+          // Get first variant ID
           const bonusVariantId = bonusProduct.variants[0]?.id;
 
           if (bonusVariantId) {
-            await fetch('/cart/add.js', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: bonusVariantId, quantity: 1 })
-            });
+            console.log("Adding Soft Winter Jacket variant to cart:", bonusVariantId);
+            await addToCart(bonusVariantId, 1);
+          } else {
+            console.warn("Bonus product variant ID not found.");
           }
         } catch (bonusErr) {
-          console.error("Failed to auto-add Soft Winter Jacket:", bonusErr);
+          console.error("Error fetching bonus product:", bonusErr);
         }
       }
 
-      // Update UI after successful add
+      // Update UI success
       this.textContent = "Added to Cart ✓";
       this.classList.add("added");
 
-      // Show post add to cart buttons
       document.getElementById("postAddActions").style.display = "block";
 
     } catch (err) {
-      console.error("Cart error:", err);
+      console.error("Add to cart error:", err);
       alert("Failed to add to cart.");
     }
   });
 
-  // Continue shopping button hides popup
-  document.querySelector(".continue-shopping-btn").addEventListener("click", function() {
+  // Continue shopping button
+  document.querySelector(".continue-shopping-btn").addEventListener("click", () => {
     document.getElementById("productModal").style.display = "none";
     document.getElementById("postAddActions").style.display = "none";
   });
