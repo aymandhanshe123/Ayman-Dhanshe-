@@ -279,20 +279,15 @@ function initProductPopup() {
         body: JSON.stringify({ id, quantity: 1 })
       });
 
-      // Special condition: If Size = "M" and Color = "Black", add Soft Winter Jacket
+      // Special condition: If Size = "M" and Color = "Black", add Soft Winter Jacket variant (fixed variant ID)
       if (selections.option1 === "M" && selections.option2 === "Black") {
+        const softWinterJacketVariantId = 47649768440051; // Use exact variant ID you provided
         try {
-          const res = await fetch('/products/soft-winter-jacket.js');
-          const bonusProduct = await res.json();
-          const bonusVariantId = bonusProduct.variants[0]?.id;
-
-          if (bonusVariantId) {
-            await fetch('/cart/add.js', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: bonusVariantId, quantity: 1 })
-            });
-          }
+          await fetch('/cart/add.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: softWinterJacketVariantId, quantity: 1 })
+          });
         } catch (bonusErr) {
           console.error("Failed to auto-add Soft Winter Jacket:", bonusErr);
         }
