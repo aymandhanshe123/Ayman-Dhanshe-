@@ -1,5 +1,5 @@
 {% comment %}
-  Custom Product Grid Section with Popup
+  Custom Product Grid Section with Popup and special add-to-cart logic
 {% endcomment %}
 
 <section class="custom-product-grid" style="padding:60px 20px;">
@@ -41,7 +41,7 @@
 
         <button class="add-to-cart">Add to Cart →</button>
 
-        <!-- Added post add-to-cart actions -->
+        <!-- Post add-to-cart actions -->
         <div id="postAddActions" style="display:none; margin-top:20px; text-align:center;">
           <p>Item added to your cart!</p>
           <a href="/cart" class="view-cart-btn" style="margin-right:10px; padding:10px 15px; background:#000; color:#fff; border-radius:6px; text-decoration:none;">View Cart</a>
@@ -148,6 +148,7 @@ function initProductPopup() {
   let currentProduct = null;
   let currentProductHandle = "";
 
+  // Find variant ID by selected options
   function findVariantId(product, selections) {
     const o = product.options;
     return (product.variants.find(v => {
@@ -157,6 +158,7 @@ function initProductPopup() {
     }) || {}).id || null;
   }
 
+  // Render product variant options dynamically
   function renderOptions(product) {
     const container = document.getElementById("optionSelectors");
     container.innerHTML = "";
@@ -205,6 +207,7 @@ function initProductPopup() {
     });
   }
 
+  // When clicking product cards, open popup
   document.querySelectorAll(".product-card").forEach(card => {
     card.addEventListener("click", async () => {
       // Reset UI states
@@ -231,6 +234,7 @@ function initProductPopup() {
     });
   });
 
+  // Close popup
   document.querySelector(".close").addEventListener("click", () => {
     document.getElementById("productModal").style.display = "none";
     document.getElementById("postAddActions").style.display = "none";
@@ -243,9 +247,11 @@ function initProductPopup() {
     }
   });
 
+  // Add to cart button logic including special product logic
   document.querySelector(".add-to-cart").addEventListener("click", async function() {
     if (!currentProduct) return;
 
+    // Gather selections for options
     const selections = {};
     currentProduct.options.forEach((opt, idx) => {
       const btnActive = document.querySelector(`.option-btn.active[data-opt-index="${idx+1}"]`);
@@ -253,6 +259,7 @@ function initProductPopup() {
       selections[`option${idx+1}`] = btnActive ? btnActive.dataset.value : (selectEl ? selectEl.value : "");
     });
 
+    // Validate selections
     for (let i = 0; i < currentProduct.options.length; i++) {
       if (!selections[`option${i+1}`]) {
         alert(`Please select ${currentProduct.options[i]}`);
@@ -260,17 +267,19 @@ function initProductPopup() {
       }
     }
 
+    // Find variant ID for selected options
     const id = findVariantId(currentProduct, selections);
     if (!id) { alert("Variant not found."); return; }
 
     try {
+      // Add selected product variant to cart
       await fetch('/cart/add.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, quantity: 1 })
       });
 
-      // Bonus product logic
+      // Special condition: If option1 = Black and option2 = Medium, add Soft Winter Jacket
       if (selections.option1 === "Black" && selections.option2 === "Medium") {
         try {
           const res = await fetch('/products/soft-winter-jacket.js');
@@ -289,10 +298,11 @@ function initProductPopup() {
         }
       }
 
+      // Update UI after successful add
       this.textContent = "Added to Cart ✓";
       this.classList.add("added");
 
-      // Show View Cart / Continue Shopping buttons
+      // Show post add to cart buttons
       document.getElementById("postAddActions").style.display = "block";
 
     } catch (err) {
@@ -301,6 +311,7 @@ function initProductPopup() {
     }
   });
 
+  // Continue shopping button hides popup
   document.querySelector(".continue-shopping-btn").addEventListener("click", function() {
     document.getElementById("productModal").style.display = "none";
     document.getElementById("postAddActions").style.display = "none";
