@@ -1,22 +1,15 @@
-{% comment %}
-  Custom Banner Section (Improved version)
-  - Clean layout with better background visibility
-  - Smaller content card with left shift
-  - Mobile responsive and visually appealing
-{% endcomment %}
-
 <section id="gift-banner-{{ section.id }}" class="cg-banner">
   <style>
     #gift-banner-{{ section.id }} {
       --cg-max-width: 1200px;
       --cg-text-color: {{ section.settings.text_color }};
       --cg-bg: {% if section.settings.bg_image != blank %}url({{ section.settings.bg_image | img_url: '2000x' }}){% else %}linear-gradient(180deg,#fafafa,#f2f2f2){% endif %};
-      --cg-overlay: rgba(255,255,255,0.78);
+      --cg-overlay: rgba(255,255,255,0.85);
       --cg-btn-bg: {{ section.settings.button_bg }};
       --cg-btn-color: {{ section.settings.button_color }};
-      --cg-btn-bg-hover: {{ section.settings.button_bg_hover }};
-      --cg-btn-color-hover: {{ section.settings.button_color_hover }};
-
+      --cg-btn-bg-hover: #ffce00; /* bright yellow */
+      --cg-btn-color-hover: #111111; /* dark text on hover */
+      
       padding: clamp(40px, 7vw, 80px) 16px;
       background: var(--cg-bg);
       background-size: cover;
@@ -24,8 +17,53 @@
       background-repeat: no-repeat;
       position: relative;
       overflow: hidden;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
 
+    /* Header bar mimicking "TISSO VISON" + other texts on top */
+    #gift-banner-{{ section.id }} .header-bar {
+      max-width: var(--cg-max-width);
+      margin: 0 auto 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      color: var(--cg-text-color);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      user-select: none;
+    }
+
+    #gift-banner-{{ section.id }} .header-bar .left {
+      font-weight: 900;
+      font-size: 1.2rem;
+      letter-spacing: 0.2em;
+    }
+
+    #gift-banner-{{ section.id }} .header-bar .center {
+      font-weight: 500;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    #gift-banner-{{ section.id }} .header-bar .right a {
+      background: #ffce00;
+      color: #111111;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      transition: background 0.2s ease, color 0.2s ease;
+      box-shadow: 0 4px 12px rgba(255,206,0,0.5);
+      user-select: none;
+    }
+
+    #gift-banner-{{ section.id }} .header-bar .right a:hover {
+      background: #e6b800;
+      color: #000;
+    }
+
+    /* Main banner inner grid */
     #gift-banner-{{ section.id }} .cg-banner__inner {
       max-width: var(--cg-max-width);
       margin: 0 auto;
@@ -36,64 +74,70 @@
 
     #gift-banner-{{ section.id }} .cg-banner__card {
       background: var(--cg-overlay);
-      backdrop-filter: blur(4px);
-      border-radius: 16px;
-      padding: clamp(16px, 4vw, 32px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      backdrop-filter: blur(6px);
+      border-radius: 20px;
+      padding: clamp(20px, 4vw, 40px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
       max-width: 520px;
     }
 
     #gift-banner-{{ section.id }} .cg-banner__eyebrow {
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       opacity: 0.7;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.4rem;
       color: var(--cg-text-color);
+      font-weight: 600;
     }
 
     #gift-banner-{{ section.id }} .cg-banner__title {
-      font-size: clamp(26px, 5vw, 42px);
+      font-size: clamp(28px, 5vw, 48px);
       line-height: 1.1;
-      margin: 0.25rem 0 0.75rem;
+      margin: 0.4rem 0 1rem;
       color: var(--cg-text-color);
-      font-weight: 700;
+      font-weight: 900;
     }
 
     #gift-banner-{{ section.id }} .cg-banner__subtitle {
-      font-size: clamp(14px, 2vw, 18px);
+      font-size: clamp(15px, 2vw, 20px);
       line-height: 1.6;
       color: var(--cg-text-color);
       opacity: 0.9;
-      margin-bottom: 20px;
+      margin-bottom: 28px;
+      font-weight: 400;
     }
 
     #gift-banner-{{ section.id }} .cg-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
       background: var(--cg-btn-bg);
       color: var(--cg-btn-color);
-      padding: 0.8rem 1.3rem;
-      border-radius: 999px;
+      padding: 0.85rem 1.6rem;
+      border-radius: 9999px;
       border: none;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 1rem;
       text-decoration: none;
-      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      user-select: none;
+      cursor: pointer;
     }
 
     #gift-banner-{{ section.id }} .cg-btn:after {
       content: "➜";
       transform: translateX(-6px);
       opacity: 0;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
     }
 
     #gift-banner-{{ section.id }} .cg-btn:hover {
       background: var(--cg-btn-bg-hover);
       color: var(--cg-btn-color-hover);
-      transform: translateY(-1px);
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 20px rgba(255, 206, 0, 0.6);
     }
 
     #gift-banner-{{ section.id }} .cg-btn:hover:after {
@@ -101,6 +145,20 @@
       opacity: 1;
     }
 
+    /* Accent image styling */
+    #gift-banner-{{ section.id }} .cg-banner__art {
+      justify-self: end;
+    }
+
+    #gift-banner-{{ section.id }} .cg-banner__art img {
+      width: min(480px, 40vw);
+      height: auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+      user-select: none;
+    }
+
+    /* Responsive grid for desktop */
     @media (min-width: 900px) {
       #gift-banner-{{ section.id }} .cg-banner__inner {
         grid-template-columns: 1fr 1fr;
@@ -108,21 +166,32 @@
       }
 
       #gift-banner-{{ section.id }} .cg-banner__card {
-        margin-left: -150px; /* Stronger shift to reveal background */
-      }
-
-      #gift-banner-{{ section.id }} .cg-banner__art {
-        justify-self: end;
-      }
-
-      #gift-banner-{{ section.id }} .cg-banner__art img {
-        width: min(480px, 40vw);
-        height: auto;
-        border-radius: 20px;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.10);
+        margin-left: -160px; /* shift left to reveal bg */
       }
     }
+
+    /* Footer line like "SUSTAINABLE..." */
+    #gift-banner-{{ section.id }} .footer-text {
+      max-width: var(--cg-max-width);
+      margin: 24px auto 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--cg-text-color);
+      opacity: 0.6;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+      user-select: none;
+    }
   </style>
+
+  <!-- Header bar: mimics Tisso Vison + tagline + button -->
+  <div class="header-bar">
+    <div class="left">TISSO VISON</div>
+    <div class="center">Find the ideal gift for your loved ones.</div>
+    <div class="right">
+      <a href="{{ section.settings.btn_link }}">CHOOSE GIFT</a>
+    </div>
+  </div>
 
   <div class="cg-banner__inner">
     <div class="cg-banner__card">
@@ -144,9 +213,14 @@
 
     {% if section.settings.accent_image != blank %}
       <div class="cg-banner__art">
-        <img src="{{ section.settings.accent_image | img_url: '900x' }}" alt="">
+        <img src="{{ section.settings.accent_image | img_url: '900x' }}" alt="Banner Image">
       </div>
     {% endif %}
+  </div>
+
+  <!-- Footer text -->
+  <div class="footer-text">
+    SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL
   </div>
 </section>
 
@@ -163,9 +237,7 @@
     { "type": "image_picker", "id": "accent_image", "label": "Optional right-side image" },
     { "type": "color", "id": "text_color", "label": "Text color", "default": "#111111" },
     { "type": "color", "id": "button_bg", "label": "Button background", "default": "#111111" },
-    { "type": "color", "id": "button_color", "label": "Button text color", "default": "#ffffff" },
-    { "type": "color", "id": "button_bg_hover", "label": "Button hover background", "default": "#2b2b2b" },
-    { "type": "color", "id": "button_color_hover", "label": "Button hover text", "default": "#ffffff" }
+    { "type": "color", "id": "button_color", "label": "Button text color", "default": "#ffffff" }
   ],
   "presets": [
     {
