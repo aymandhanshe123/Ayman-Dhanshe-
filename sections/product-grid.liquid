@@ -279,8 +279,8 @@ function initProductPopup() {
         body: JSON.stringify({ id, quantity: 1 })
       });
 
-      // Special condition: If option1 = Black and option2 = Medium, add Soft Winter Jacket
-      if (selections.option1 === "Black" && selections.option2 === "Medium") {
+      // Special condition: If Size = "M" and Color = "Black", add Soft Winter Jacket
+      if (selections.option1 === "M" && selections.option2 === "Black") {
         try {
           const res = await fetch('/products/soft-winter-jacket.js');
           const bonusProduct = await res.json();
@@ -352,12 +352,6 @@ if (Shopify.designMode) {
       "max": 12,
       "step": 1,
       "default": 6
-    }
-  ],
-  "presets": [
-    {
-      "name": "Custom Product Grid with Popup",
-      "category": "Custom"
     }
   ]
 }
