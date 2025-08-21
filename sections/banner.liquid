@@ -1,7 +1,7 @@
 <section id="gift-banner-{{ section.id }}" class="cg-banner">
   <style>
     #gift-banner-{{ section.id }} {
-      --cg-max-width: 1200px;
+      --cg-max-width: 3840px;
       --cg-text-color: {{ section.settings.text_color }};
       --cg-bg: {% if section.settings.bg_image != blank %}url({{ section.settings.bg_image | img_url: '2000x' }}){% else %}linear-gradient(180deg,#fafafa,#f2f2f2){% endif %};
       --cg-overlay: rgba(255,255,255,0.85);
@@ -9,8 +9,8 @@
       --cg-btn-color: {{ section.settings.button_color }};
       --cg-btn-bg-hover: #ffce00; /* bright yellow */
       --cg-btn-color-hover: #111111; /* dark text on hover */
-      
-      padding: clamp(40px, 7vw, 80px) 16px;
+
+      padding: 26.67px 16px;
       background: var(--cg-bg);
       background-size: cover;
       background-position: center center;
@@ -18,49 +18,77 @@
       position: relative;
       overflow: hidden;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      max-width: var(--cg-max-width);
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* Header bar mimicking "TISSO VISON" + other texts on top */
     #gift-banner-{{ section.id }} .header-bar {
       max-width: var(--cg-max-width);
-      margin: 0 auto 32px;
+      margin: 0 auto 26.67px;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
+      gap: 720px;
       font-weight: 700;
       color: var(--cg-text-color);
-      font-size: 0.85rem;
+      font-size: 1rem; /* slightly increased */
       letter-spacing: 0.1em;
       user-select: none;
     }
 
     #gift-banner-{{ section.id }} .header-bar .left {
       font-weight: 900;
-      font-size: 1.2rem;
+      font-size: 1.3rem; /* slightly increased */
       letter-spacing: 0.2em;
     }
 
     #gift-banner-{{ section.id }} .header-bar .center {
       font-weight: 500;
-      font-size: 0.9rem;
+      font-size: 1rem; /* slightly increased */
       opacity: 0.7;
     }
 
-    #gift-banner-{{ section.id }} .header-bar .right a {
-      background: #ffce00;
-      color: #111111;
-      font-weight: 600;
-      padding: 0.6rem 1.2rem;
+    #gift-banner-{{ section.id }} .header-bar .right a,
+    #gift-banner-{{ section.id }} .cg-btn {
+      background: var(--cg-btn-bg);
+      color: var(--cg-btn-color);
+      font-weight: 700;
+      padding: 0.85rem 1.6rem;
       border-radius: 9999px;
       text-decoration: none;
-      transition: background 0.2s ease, color 0.2s ease;
-      box-shadow: 0 4px 12px rgba(255,206,0,0.5);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1rem;
+      border: none;
+      transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
       user-select: none;
+      cursor: pointer;
     }
 
-    #gift-banner-{{ section.id }} .header-bar .right a:hover {
-      background: #e6b800;
-      color: #000;
+    #gift-banner-{{ section.id }} .header-bar .right a:after,
+    #gift-banner-{{ section.id }} .cg-btn:after {
+      content: "➜";
+      transform: translateX(-6px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    #gift-banner-{{ section.id }} .header-bar .right a:hover,
+    #gift-banner-{{ section.id }} .cg-btn:hover {
+      background: var(--cg-btn-bg-hover);
+      color: var(--cg-btn-color-hover);
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 20px rgba(255, 206, 0, 0.6);
+    }
+
+    #gift-banner-{{ section.id }} .header-bar .right a:hover:after,
+    #gift-banner-{{ section.id }} .cg-btn:hover:after {
+      transform: translateX(0);
+      opacity: 1;
     }
 
     /* Main banner inner grid */
@@ -108,43 +136,6 @@
       font-weight: 400;
     }
 
-    #gift-banner-{{ section.id }} .cg-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      background: var(--cg-btn-bg);
-      color: var(--cg-btn-color);
-      padding: 0.85rem 1.6rem;
-      border-radius: 9999px;
-      border: none;
-      font-weight: 700;
-      font-size: 1rem;
-      text-decoration: none;
-      transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-      user-select: none;
-      cursor: pointer;
-    }
-
-    #gift-banner-{{ section.id }} .cg-btn:after {
-      content: "➜";
-      transform: translateX(-6px);
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-
-    #gift-banner-{{ section.id }} .cg-btn:hover {
-      background: var(--cg-btn-bg-hover);
-      color: var(--cg-btn-color-hover);
-      transform: translateY(-1.5px);
-      box-shadow: 0 8px 20px rgba(255, 206, 0, 0.6);
-    }
-
-    #gift-banner-{{ section.id }} .cg-btn:hover:after {
-      transform: translateX(0);
-      opacity: 1;
-    }
-
     /* Accent image styling */
     #gift-banner-{{ section.id }} .cg-banner__art {
       justify-self: end;
@@ -189,7 +180,7 @@
     <div class="left">TISSO VISON</div>
     <div class="center">Find the ideal gift for your loved ones.</div>
     <div class="right">
-      <a href="{{ section.settings.btn_link }}">CHOOSE GIFT</a>
+      <a href="{{ section.settings.btn_link }}" class="cg-btn">CHOOSE GIFT</a>
     </div>
   </div>
 
