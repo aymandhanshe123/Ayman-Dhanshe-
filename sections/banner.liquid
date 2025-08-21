@@ -1,14 +1,13 @@
 {% comment %}
-  Custom Banner Section
-  - Editable title, subtitle, button label, button link, background image
-  - Button hover animation
-  - Responsive layout
-  - No Dawn components used
+  Custom Banner Section (Improved version)
+  - Clean layout with better background visibility
+  - Smaller content card with left shift
+  - Mobile responsive and visually appealing
 {% endcomment %}
 
 <section id="gift-banner-{{ section.id }}" class="cg-banner">
   <style>
-    #gift-banner-{{ section.id }}{
+    #gift-banner-{{ section.id }} {
       --cg-max-width: 1200px;
       --cg-text-color: {{ section.settings.text_color }};
       --cg-bg: {% if section.settings.bg_image != blank %}url({{ section.settings.bg_image | img_url: '2000x' }}){% else %}linear-gradient(180deg,#fafafa,#f2f2f2){% endif %};
@@ -17,98 +16,110 @@
       --cg-btn-color: {{ section.settings.button_color }};
       --cg-btn-bg-hover: {{ section.settings.button_bg_hover }};
       --cg-btn-color-hover: {{ section.settings.button_color_hover }};
+
       padding: clamp(40px, 7vw, 80px) 16px;
       background: var(--cg-bg);
       background-size: cover;
-      background-position: center;
+      background-position: center center;
+      background-repeat: no-repeat;
       position: relative;
       overflow: hidden;
     }
-    #gift-banner-{{ section.id }} .cg-banner__inner{
+
+    #gift-banner-{{ section.id }} .cg-banner__inner {
       max-width: var(--cg-max-width);
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr;
       gap: 24px;
     }
-    #gift-banner-{{ section.id }} .cg-banner__card{
+
+    #gift-banner-{{ section.id }} .cg-banner__card {
       background: var(--cg-overlay);
       backdrop-filter: blur(4px);
-      border-radius: 18px;
-      padding: clamp(20px, 4vw, 36px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+      border-radius: 16px;
+      padding: clamp(16px, 4vw, 32px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      max-width: 520px;
     }
-    #gift-banner-{{ section.id }} .cg-banner__eyebrow{
-      letter-spacing: .08em;
+
+    #gift-banner-{{ section.id }} .cg-banner__eyebrow {
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      font-size: .85rem;
-      opacity: .7;
-      margin-bottom: .25rem;
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-bottom: 0.25rem;
       color: var(--cg-text-color);
     }
-    #gift-banner-{{ section.id }} .cg-banner__title{
-      font-size: clamp(28px, 5vw, 48px);
+
+    #gift-banner-{{ section.id }} .cg-banner__title {
+      font-size: clamp(26px, 5vw, 42px);
       line-height: 1.1;
-      margin: .25rem 0 .75rem;
+      margin: 0.25rem 0 0.75rem;
       color: var(--cg-text-color);
       font-weight: 700;
     }
-    #gift-banner-{{ section.id }} .cg-banner__subtitle{
+
+    #gift-banner-{{ section.id }} .cg-banner__subtitle {
       font-size: clamp(14px, 2vw, 18px);
       line-height: 1.6;
-      max-width: 62ch;
       color: var(--cg-text-color);
-      opacity: .9;
+      opacity: 0.9;
       margin-bottom: 20px;
     }
-    #gift-banner-{{ section.id }} .cg-btn{
-      display:inline-flex;
-      align-items:center;
-      gap:.6rem;
+
+    #gift-banner-{{ section.id }} .cg-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       background: var(--cg-btn-bg);
       color: var(--cg-btn-color);
-      padding:.85rem 1.2rem .85rem 1.1rem;
+      padding: 0.8rem 1.3rem;
       border-radius: 999px;
-      border: 2px solid transparent;
+      border: none;
       font-weight: 600;
-      text-decoration:none;
-      position:relative;
-      transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
-      will-change: transform;
-      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+      text-decoration: none;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
     }
-    #gift-banner-{{ section.id }} .cg-btn:after{
+
+    #gift-banner-{{ section.id }} .cg-btn:after {
       content: "➜";
-      display:inline-block;
       transform: translateX(-6px);
-      opacity: .0;
-      transition: transform .2s ease, opacity .2s ease;
+      opacity: 0;
+      transition: all 0.2s ease;
     }
-    #gift-banner-{{ section.id }} .cg-btn:hover{
-      transform: translateY(-1px);
+
+    #gift-banner-{{ section.id }} .cg-btn:hover {
       background: var(--cg-btn-bg-hover);
       color: var(--cg-btn-color-hover);
-      box-shadow: 0 10px 24px rgba(0,0,0,.12);
+      transform: translateY(-1px);
     }
-    #gift-banner-{{ section.id }} .cg-btn:hover:after{
+
+    #gift-banner-{{ section.id }} .cg-btn:hover:after {
       transform: translateX(0);
       opacity: 1;
     }
 
-    /* Desktop layout variant if image is provided as "accent image" (optional) */
-    @media (min-width: 900px){
-      #gift-banner-{{ section.id }} .cg-banner__inner{
-        grid-template-columns: 1.1fr .9fr;
+    @media (min-width: 900px) {
+      #gift-banner-{{ section.id }} .cg-banner__inner {
+        grid-template-columns: 1fr 1fr;
         align-items: center;
       }
-      #gift-banner-{{ section.id }} .cg-banner__art{
+
+      #gift-banner-{{ section.id }} .cg-banner__card {
+        margin-left: -60px; /* Stronger shift to reveal background */
+      }
+
+      #gift-banner-{{ section.id }} .cg-banner__art {
         justify-self: end;
       }
-      #gift-banner-{{ section.id }} .cg-banner__art img{
-        width: min(520px, 40vw);
+
+      #gift-banner-{{ section.id }} .cg-banner__art img {
+        width: min(480px, 40vw);
         height: auto;
         border-radius: 20px;
-        box-shadow: 0 8px 28px rgba(0,0,0,.10);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.10);
       }
     }
   </style>
@@ -156,6 +167,10 @@
     { "type": "color", "id": "button_bg_hover", "label": "Button hover background", "default": "#2b2b2b" },
     { "type": "color", "id": "button_color_hover", "label": "Button hover text", "default": "#ffffff" }
   ],
-  "presets": [{ "name": "Custom Banner" }]
+  "presets": [
+    {
+      "name": "Custom Banner"
+    }
+  ]
 }
 {% endschema %}
