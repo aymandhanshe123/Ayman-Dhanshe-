@@ -1,8 +1,8 @@
 {% comment %}
   Custom Banner Section
   - Enhanced background image layout
+  - Slight left shift of content box on desktop
   - Improved readability with overlay
-  - Responsive and aesthetic design
 {% endcomment %}
 
 <section id="gift-banner-{{ section.id }}" class="cg-banner">
@@ -11,7 +11,7 @@
       --cg-max-width: 1200px;
       --cg-text-color: {{ section.settings.text_color }};
       --cg-bg: {% if section.settings.bg_image != blank %}url({{ section.settings.bg_image | img_url: '2000x' }}){% else %}linear-gradient(180deg,#fafafa,#f2f2f2){% endif %};
-      --cg-overlay: rgba(255,255,255,0.85); /* Light overlay for readability */
+      --cg-overlay: rgba(255,255,255,0.85);
       --cg-btn-bg: {{ section.settings.button_bg }};
       --cg-btn-color: {{ section.settings.button_color }};
       --cg-btn-bg-hover: {{ section.settings.button_bg_hover }};
@@ -107,8 +107,12 @@
 
     @media (min-width: 900px) {
       #gift-banner-{{ section.id }} .cg-banner__inner {
-        grid-template-columns: 1.1fr 0.9fr;
+        grid-template-columns: 1fr 1fr;
         align-items: center;
+      }
+
+      #gift-banner-{{ section.id }} .cg-banner__card {
+        margin-left: -40px; /* Shift content box left */
       }
 
       #gift-banner-{{ section.id }} .cg-banner__art {
