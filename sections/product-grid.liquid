@@ -11,15 +11,14 @@
 
   <div class="product-grid">
     {% for product in collections[section.settings.collection].products limit: section.settings.products_to_show %}
-      <div class="product-card" 
+      <div class="product-card"
            data-title="{{ product.title }}"
            data-price="{{ product.price | money }}"
            data-url="{{ product.url }}"
            data-image="{{ product.featured_image | image_url: width: 400 }}"
            data-description="{{ product.description | strip_html | truncate: 150 }}"
            data-handle="{{ product.handle }}">
-        <img src="{{ product.featured_image | image_url: width: 400 }}" 
-             alt="{{ product.title }}">
+        <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title }}">
         <h3>{{ product.title }}</h3>
         <p>{{ product.price | money }}</p>
       </div>
@@ -37,10 +36,9 @@
         <h3 id="modalTitle"></h3>
         <p id="modalPrice"></p>
         <p id="modalDescription"></p>
-        
-        <!-- Dynamic options -->
+
         <div id="optionSelectors"></div>
-        
+
         <button class="add-to-cart">Add to Cart →</button>
       </div>
     </div>
@@ -161,7 +159,7 @@ function initProductPopup() {
       group.classList.add("option-group");
 
       const label = document.createElement("label");
-      label.textContent = optName;
+      label.textContent = typeof optName === "string" ? optName : String(optName);
       group.appendChild(label);
 
       const values = [...new Set(product.variants.map(v => v[`option${idx+1}`]))];
@@ -184,7 +182,8 @@ function initProductPopup() {
         select.className = "option-select";
         select.dataset.optIndex = idx+1;
         const empty = document.createElement("option");
-        empty.value = ""; empty.textContent = "Choose " + optName;
+        empty.value = "";
+        empty.textContent = "Choose " + label.textContent;
         select.appendChild(empty);
         values.forEach(val => {
           const opt = document.createElement("option");
@@ -259,8 +258,28 @@ function initProductPopup() {
         body: JSON.stringify({ id, quantity: 1 })
       });
 
+      // Bonus product logic
+      if (selections.option1 === "Black" && selections.option2 === "Medium") {
+        try {
+          const res = await fetch('/products/soft-winter-jacket.js');
+          const bonusProduct = await res.json();
+          const bonusVariantId = bonusProduct.variants[0]?.id;
+
+          if (bonusVariantId) {
+            await fetch('/cart/add.js', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: bonusVariantId, quantity: 1 })
+            });
+          }
+        } catch (bonusErr) {
+          console.error("Failed to auto-add Soft Winter Jacket:", bonusErr);
+        }
+      }
+
       this.textContent = "Added to Cart ✓";
       this.classList.add("added");
+
     } catch (err) {
       console.error("Cart error:", err);
       alert("Failed to add to cart.");
@@ -268,10 +287,8 @@ function initProductPopup() {
   });
 }
 
-// Run on page load
 document.addEventListener("DOMContentLoaded", initProductPopup);
 
-// Run when section is reloaded in Shopify editor
 if (Shopify.designMode) {
   document.addEventListener('shopify:section:load', function(event) {
     if (event.target.querySelector('.custom-product-grid')) {
